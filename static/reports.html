@@ -33,7 +33,7 @@
       <div class="flex items-center justify-between mb-4 gap-2">
         <button onclick="weekOffset++;loadWeekly()" class="p-2 rounded-xl bg-white shadow-sm text-coffee-700 font-bold text-lg">&#8249;</button>
         <span id="weekly-period" class="text-sm font-medium text-coffee-800"></span>
-        <button onclick="weekOffset=Math.max(0,weekOffset-1);loadWeekly()" class="p-2 rounded-xl bg-white shadow-sm text-coffee-700 font-bold text-lg">&#8250;</button>
+        <button onclick="weekOffset--;loadWeekly()" class="p-2 rounded-xl bg-white shadow-sm text-coffee-700 font-bold text-lg">&#8250;</button>
       </div>
       <div id="weekly-content"></div>
     </div>

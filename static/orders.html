@@ -247,7 +247,7 @@
       loadMonth();
     }
 
-    async function loadMonth() {
+    async function loadMonth(overrideDate = null) {
       document.getElementById('month-picker').value =
         `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
       const params = new URLSearchParams({ year: currentYear, month: currentMonth });
@@ -260,13 +260,16 @@
       });
       renderCalendar();
 
-      // 預設選今天（如果在這個月）
-      const today = new Date();
-      const todayStr = today.toLocaleDateString('en-CA');
-      if (today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth) {
-        selectDay(todayStr);
+      if (overrideDate) {
+        selectDay(overrideDate);
       } else {
-        clearDaySelection();
+        const today = new Date();
+        const todayStr = today.toLocaleDateString('en-CA');
+        if (today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth) {
+          selectDay(todayStr);
+        } else {
+          clearDaySelection();
+        }
       }
     }
 
@@ -371,6 +374,7 @@
 
     async function saveOrder() {
       if (!currentOrder) return;
+      const keepDate = selectedDate;
       await fetch(`/api/orders/${currentOrder.id}`, {
         method: 'PATCH', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
@@ -385,7 +389,7 @@
         }),
       });
       closeDetail();
-      loadMonth();
+      loadMonth(keepDate);
     }
 
     document.getElementById('detail-modal').addEventListener('click', e => {
