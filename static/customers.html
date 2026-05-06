@@ -103,6 +103,7 @@
           </div>
         </div>
         <button onclick="saveOrderEdit()" class="w-full mt-5 bg-coffee-700 text-white py-3 rounded-xl font-semibold">儲存</button>
+        <button onclick="deleteOrderEdit()" class="w-full mt-2 border border-red-200 text-red-500 py-3 rounded-xl font-semibold">刪除訂單</button>
       </div>
     </div>
   </div>
@@ -300,6 +301,14 @@
     function closeOrderEdit() {
       document.getElementById('order-edit-modal').classList.add('hidden');
       editingOrderId = null;
+    }
+
+    async function deleteOrderEdit() {
+      if (!editingOrderId) return;
+      if (!confirm('確定要刪除這筆訂單？')) return;
+      await fetch(`/api/orders/${editingOrderId}`, { method: 'DELETE' });
+      closeOrderEdit();
+      openCustomer(currentCustomerId);
     }
 
     document.getElementById('customer-modal').addEventListener('click', e => {

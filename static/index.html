@@ -37,7 +37,8 @@
       <div class="text-center text-sm text-gray-500 mb-4" id="modal-order-summary"></div>
       <p class="text-sm font-medium text-gray-600 mb-2">變更狀態：</p>
       <div class="grid grid-cols-2 gap-2 mb-3" id="status-buttons"></div>
-      <button onclick="closeModal()" class="w-full py-2 text-sm text-gray-500 border border-gray-200 rounded-xl mt-1">取消</button>
+      <button onclick="deleteOrder()" class="w-full py-2 text-sm text-red-500 border border-red-200 rounded-xl mb-1">刪除訂單</button>
+      <button onclick="closeModal()" class="w-full py-2 text-sm text-gray-500 border border-gray-200 rounded-xl">取消</button>
     </div>
   </div>
 
@@ -130,6 +131,14 @@
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({status}),
       });
+      closeModal();
+      load();
+    }
+
+    async function deleteOrder() {
+      if (!currentOrderId) return;
+      if (!confirm('確定要刪除這筆訂單？')) return;
+      await fetch(`/api/orders/${currentOrderId}`, { method: 'DELETE' });
       closeModal();
       load();
     }

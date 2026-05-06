@@ -124,6 +124,7 @@
             <textarea id="edit-notes" rows="2" class="w-full mt-1 border border-coffee-200 rounded-lg px-3 py-2 text-sm"></textarea>
           </div>
           <button onclick="saveOrder()" class="w-full bg-coffee-700 text-white py-3 rounded-xl font-medium">儲存</button>
+          <button onclick="deleteOrder()" class="w-full border border-red-200 text-red-500 py-3 rounded-xl font-medium">刪除訂單</button>
         </div>
       </div>
     </div>
@@ -370,6 +371,15 @@
     function closeDetail() {
       document.getElementById('detail-modal').classList.add('hidden');
       currentOrder = null;
+    }
+
+    async function deleteOrder() {
+      if (!currentOrder) return;
+      if (!confirm('確定要刪除這筆訂單？')) return;
+      const keepDate = selectedDate;
+      await fetch(`/api/orders/${currentOrder.id}`, { method: 'DELETE' });
+      closeDetail();
+      loadMonth(keepDate);
     }
 
     async function saveOrder() {
