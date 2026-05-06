@@ -50,8 +50,14 @@ def search_orders(
 
 
 @router.get("/today", response_model=List[OrderOut])
-def today_orders(db: Session = Depends(get_db)):
-    today = date.today()
+def today_orders(local_date: Optional[str] = None, db: Session = Depends(get_db)):
+    if local_date:
+        try:
+            today = date.fromisoformat(local_date)
+        except ValueError:
+            today = date.today()
+    else:
+        today = date.today()
     orders = (
         db.query(Order)
         .options(

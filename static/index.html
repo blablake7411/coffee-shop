@@ -66,7 +66,8 @@
     document.getElementById('today-date').textContent = new Date().toLocaleDateString('zh-TW', {month:'long',day:'numeric',weekday:'short'});
 
     async function load() {
-      const res = await fetch('/api/orders/today');
+      const todayStr = new Date().toLocaleDateString('en-CA');
+      const res = await fetch(`/api/orders/today?local_date=${todayStr}`);
       const orders = await res.json();
       render(orders);
     }
