@@ -139,6 +139,14 @@ class PurchaseRecordCreate(BaseModel):
     product_id: int
     quantity_grams: float
     cost_per_gram: float
+    purchased_at: Optional[date] = None
+    notes: Optional[str] = None
+
+
+class PurchaseRecordUpdate(BaseModel):
+    quantity_grams: Optional[float] = None
+    total_cost: Optional[float] = None
+    purchased_at: Optional[date] = None
     notes: Optional[str] = None
 
 
