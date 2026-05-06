@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>訂單管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { coffee: { 50:'#fdf8f0',100:'#faebd7',200:'#f5d5a8',300:'#edb96d',400:'#e09a3e',500:'#c97d22',600:'#a8631a',700:'#864e16',800:'#6b3e13',900:'#573310' } } } }
+    }
+  </script>
+</head>
+<body class="bg-coffee-50 min-h-screen pb-20">
+
+  <header class="bg-coffee-800 text-white sticky top-0 z-20 shadow">
+    <div id="month-header" class="px-3 py-2 flex items-center gap-2">
+      <button onclick="prevMonth()" class="text-white px-2 py-1 text-xl shrink-0">&#8249;</button>
+      <div class="flex-1 flex justify-center">
+        <input type="month" id="month-picker"
+          class="bg-transparent text-white text-base font-bold text-center border-none outline-none cursor-pointer"
+          style="color-scheme:dark">
+      </div>
+      <button onclick="nextMonth()" class="text-white px-2 py-1 text-xl shrink-0">&#8250;</button>
+      <button onclick="enterSearch()" class="text-white text-lg px-1 shrink-0 opacity-80">&#128269;</button>
+    </div>
+    <div id="search-header" class="px-3 py-2 flex items-center gap-2 hidden">
+      <input type="text" id="search-input" placeholder="搜尋客戶名稱..."
+        class="flex-1 bg-coffee-700 text-white placeholder-coffee-300 rounded-xl px-3 py-2 text-sm outline-none"
+        oninput="handleSearch()">
+      <button onclick="exitSearch()" class="text-coffee-200 text-sm shrink-0 px-1">取消</button>
+    </div>
+  </header>
+
+  <!-- 月曆 -->
+  <div id="calendar-section" class="bg-white border-b border-coffee-100 pb-2 pt-3 px-2 sticky top-12 z-10">
+    <div class="grid grid-cols-7 text-center mb-1">
+      <div class="text-xs text-gray-500 font-medium py-1">一</div>
+      <div class="text-xs text-gray-500 font-medium py-1">二</div>
+      <div class="text-xs text-gray-500 font-medium py-1">三</div>
+      <div class="text-xs text-gray-500 font-medium py-1">四</div>
+      <div class="text-xs text-gray-500 font-medium py-1">五</div>
+      <div class="text-xs text-gray-500 font-medium py-1">六</div>
+      <div class="text-xs text-red-400 font-medium py-1">日</div>
+    </div>
+    <div id="calendar-grid" class="grid grid-cols-7 gap-0.5"></div>
+  </div>
+
+  <!-- 選中日期的訂單列表 / 搜尋結果 -->
+  <main class="px-3 py-4 max-w-2xl mx-auto">
+    <!-- 月曆模式 -->
+    <div id="day-orders-section">
+      <div id="selected-day-label" class="text-sm font-medium text-coffee-800 mb-3 hidden"></div>
+      <div id="orders-list" class="space-y-2"></div>
+      <div id="empty-msg" class="text-center text-coffee-300 py-10 hidden">
+        <div class="text-sm">點擊日期查看訂單</div>
+      </div>
+    </div>
+    <!-- 搜尋模式 -->
+    <div id="search-results" class="hidden">
+      <div class="flex gap-2 mb-3">
+        <button onclick="toggleFilter('credit')" id="filter-credit"
+          class="text-xs px-3 py-1.5 rounded-full border border-coffee-200 text-gray-500 transition">賒帳未還</button>
+        <button onclick="toggleFilter('transfer')" id="filter-transfer"
+          class="text-xs px-3 py-1.5 rounded-full border border-coffee-200 text-gray-500 transition">匯款</button>
+      </div>
+      <div id="search-count" class="text-xs text-gray-400 mb-2"></div>
+      <div id="search-list" class="space-y-2"></div>
+    </div>
+  </main>
+
+  <!-- 訂單編輯 Modal -->
+  <div id="detail-modal" class="fixed inset-0 bg-black/50 z-50 hidden overflow-y-auto">
+    <div class="min-h-screen flex items-end sm:items-center justify-center">
+      <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 mx-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold text-coffee-900">訂單詳情</h2>
+          <button onclick="closeDetail()" class="text-gray-400 text-2xl leading-none">&times;</button>
+        </div>
+        <div id="detail-info" class="space-y-3 mb-4"></div>
+        <hr class="border-coffee-100 mb-4">
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm font-medium text-gray-600">訂單日期</label>
+              <input type="date" id="edit-date" class="w-full mt-1 border border-coffee-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-600">狀態</label>
+              <select id="edit-status" class="w-full mt-1 border border-coffee-200 rounded-lg px-3 py-2">
+                <option>待確認</option><option>處理中</option><option>已出貨</option><option>完成</option><option>退款</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-600">付款方式</label>
+            <div class="flex gap-2 mt-1">
+              <button id="pay-cash" onclick="setPayMethod('現金')"
+                class="flex-1 py-2 rounded-lg text-sm font-medium border-2 transition">現金</button>
+              <button id="pay-transfer" onclick="setPayMethod('匯款')"
+                class="flex-1 py-2 rounded-lg text-sm font-medium border-2 transition">匯款</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm font-medium text-gray-600">折扣金額</label>
+              <input type="number" id="edit-discount" class="w-full mt-1 border border-coffee-200 rounded-lg px-3 py-2" min="0">
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-600">實收金額</label>
+              <input type="number" id="edit-final" class="w-full mt-1 border border-coffee-200 rounded-lg px-3 py-2" min="0">
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-4">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" id="edit-credit" class="accent-coffee-600 w-4 h-4"> 賒帳
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" id="edit-credit-paid" class="accent-green-600 w-4 h-4"> 已還清
+            </label>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-600">備註</label>
+            <textarea id="edit-notes" rows="2" class="w-full mt-1 border border-coffee-200 rounded-lg px-3 py-2 text-sm"></textarea>
+          </div>
+          <button onclick="saveOrder()" class="w-full bg-coffee-700 text-white py-3 rounded-xl font-medium">儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-coffee-200 flex justify-around py-1.5 z-40">
+    <a href="/" class="flex flex-col items-center text-gray-400"><span class="text-xl">📋</span><span class="text-xs">今日</span></a>
+    <a href="/static/new_order.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">➕</span><span class="text-xs">新增</span></a>
+    <a href="/static/orders.html" class="flex flex-col items-center text-coffee-700 font-medium"><span class="text-xl">📦</span><span class="text-xs">訂單</span></a>
+    <a href="/static/customers.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">👥</span><span class="text-xs">客戶</span></a>
+    <a href="/static/inventory.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">🏪</span><span class="text-xs">庫存</span></a>
+    <a href="/static/reports.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">📊</span><span class="text-xs">報表</span></a>
+  </nav>
+
+  <script>
+    const STATUS_COLORS = {
+      '待確認':'bg-yellow-100 text-yellow-800','處理中':'bg-blue-100 text-blue-800',
+      '已出貨':'bg-purple-100 text-purple-800','完成':'bg-green-100 text-green-800','退款':'bg-red-100 text-red-800',
+    };
+
+    let currentYear, currentMonth;
+    let allOrders = [];
+    let ordersByDate = {};
+    let selectedDate = null;
+    let currentOrder = null;
+    let activeFilter = null;
+
+    function enterSearch() {
+      document.getElementById('month-header').classList.add('hidden');
+      document.getElementById('search-header').classList.remove('hidden');
+      document.getElementById('calendar-section').classList.add('hidden');
+      document.getElementById('day-orders-section').classList.add('hidden');
+      document.getElementById('search-results').classList.remove('hidden');
+      document.getElementById('search-input').focus();
+      handleSearch();
+    }
+
+    function exitSearch() {
+      document.getElementById('search-header').classList.add('hidden');
+      document.getElementById('month-header').classList.remove('hidden');
+      document.getElementById('calendar-section').classList.remove('hidden');
+      document.getElementById('day-orders-section').classList.remove('hidden');
+      document.getElementById('search-results').classList.add('hidden');
+      document.getElementById('search-input').value = '';
+      activeFilter = null;
+      updateFilterButtons();
+    }
+
+    function toggleFilter(f) {
+      activeFilter = activeFilter === f ? null : f;
+      updateFilterButtons();
+      handleSearch();
+    }
+
+    function updateFilterButtons() {
+      const on = 'text-xs px-3 py-1.5 rounded-full border transition bg-coffee-700 text-white border-coffee-700';
+      const off = 'text-xs px-3 py-1.5 rounded-full border transition border-coffee-200 text-gray-500';
+      document.getElementById('filter-credit').className = activeFilter === 'credit' ? on : off;
+      document.getElementById('filter-transfer').className = activeFilter === 'transfer' ? on : off;
+    }
+
+    async function handleSearch() {
+      const q = document.getElementById('search-input').value.trim();
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (activeFilter === 'credit') params.set('credit_unpaid', 'true');
+      if (activeFilter === 'transfer') params.set('payment_method', '匯款');
+      const res = await fetch('/api/orders/search?' + params);
+      const orders = await res.json();
+      document.getElementById('search-count').textContent = `共 ${orders.length} 筆`;
+      document.getElementById('search-list').innerHTML = orders.map(o => renderOrderCard(o, true)).join('');
+    }
+
+    function renderOrderCard(o, showDate = false) {
+      const summary = o.items.map(i => `${i.product?.name || '?'} ${i.gram_size}g×${i.quantity}`).join('、');
+      const creditBadge = o.is_credit
+        ? `<span class="text-xs px-1.5 py-0.5 rounded-full ${o.credit_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.credit_paid ? '已還' : '未還'}</span>`
+        : '';
+      const payBadge = o.payment_method === '匯款'
+        ? '<span class="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">匯款</span>'
+        : '';
+      return `
+      <div class="bg-white rounded-xl shadow-sm p-3 cursor-pointer hover:shadow-md transition" onclick='openDetail(${JSON.stringify(o)})'>
+        <div class="flex justify-between items-start gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap gap-1 items-center">
+              <span class="font-semibold text-coffee-900">${o.customer?.name || '?'}</span>
+              ${showDate ? `<span class="text-xs text-gray-400">${o.order_date}</span>` : ''}
+              <span class="text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[o.status] || 'bg-gray-100 text-gray-700'}">${o.status}</span>
+              ${creditBadge}${payBadge}
+            </div>
+            <div class="text-xs text-gray-400 mt-0.5 truncate">${summary || '無品項'}</div>
+          </div>
+          <div class="font-bold text-coffee-800 shrink-0">$${o.final_amount.toFixed(0)}</div>
+        </div>
+      </div>`;
+    }
+
+    function init() {
+      const today = new Date();
+      currentYear = today.getFullYear();
+      currentMonth = today.getMonth() + 1;
+      document.getElementById('month-picker').addEventListener('change', function() {
+        const [y, m] = this.value.split('-');
+        currentYear = parseInt(y);
+        currentMonth = parseInt(m);
+        loadMonth();
+      });
+      loadMonth();
+    }
+
+    function prevMonth() {
+      currentMonth--;
+      if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+      loadMonth();
+    }
+
+    function nextMonth() {
+      currentMonth++;
+      if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+      loadMonth();
+    }
+
+    async function loadMonth() {
+      document.getElementById('month-picker').value =
+        `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+      const params = new URLSearchParams({ year: currentYear, month: currentMonth });
+      const res = await fetch('/api/orders/?' + params);
+      allOrders = await res.json();
+      ordersByDate = {};
+      allOrders.forEach(o => {
+        if (!ordersByDate[o.order_date]) ordersByDate[o.order_date] = [];
+        ordersByDate[o.order_date].push(o);
+      });
+      renderCalendar();
+
+      // 預設選今天（如果在這個月）
+      const today = new Date();
+      const todayStr = today.toLocaleDateString('en-CA');
+      if (today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth) {
+        selectDay(todayStr);
+      } else {
+        clearDaySelection();
+      }
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      const rawFirstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+      const firstDay = (rawFirstDay + 6) % 7; // 0=Mon ... 6=Sun
+      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+      const today = new Date().toLocaleDateString('en-CA');
+      let cells = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        cells += '<div></div>';
+      }
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const orders = ordersByDate[dateStr] || [];
+        const isToday = dateStr === today;
+        const isSelected = dateStr === selectedDate;
+        const dayOfWeek = (firstDay + d - 1) % 7; // 0=Mon 5=Sat 6=Sun
+        const textColor = dayOfWeek === 6 ? 'text-red-500' : dayOfWeek === 5 ? 'text-blue-500' : 'text-gray-700';
+        const totalAmt = orders.reduce((s, o) => s + o.final_amount, 0);
+
+        cells += `
+          <div onclick="selectDay('${dateStr}')"
+            class="relative flex flex-col items-center py-1 rounded-lg cursor-pointer transition
+              ${isSelected ? 'bg-coffee-700 text-white' : isToday ? 'bg-coffee-100' : 'hover:bg-coffee-50'}">
+            <span class="text-sm font-medium leading-5 ${isSelected ? 'text-white' : textColor}">${d}</span>
+            ${orders.length > 0 ? `
+              <span class="text-xs leading-none mt-0.5 ${isSelected ? 'text-coffee-200' : 'text-coffee-600'} font-medium">
+                ${orders.length}筆
+              </span>
+              <span class="text-xs leading-none ${isSelected ? 'text-coffee-200' : 'text-coffee-500'}">
+                $${totalAmt.toFixed(0)}
+              </span>
+            ` : '<span class="h-4"></span>'}
+          </div>`;
+      }
+      grid.innerHTML = cells;
+    }
+
+    function selectDay(dateStr) {
+      selectedDate = dateStr;
+      renderCalendar();
+      const orders = ordersByDate[dateStr] || [];
+      const label = document.getElementById('selected-day-label');
+      const [y, m, d] = dateStr.split('-');
+      label.textContent = `${parseInt(m)} 月 ${parseInt(d)} 日 — ${orders.length} 筆訂單`;
+      label.classList.remove('hidden');
+      renderDayOrders(orders);
+    }
+
+    function clearDaySelection() {
+      selectedDate = null;
+      document.getElementById('selected-day-label').classList.add('hidden');
+      document.getElementById('orders-list').innerHTML = '';
+      document.getElementById('empty-msg').classList.remove('hidden');
+    }
+
+    function renderDayOrders(orders) {
+      const list = document.getElementById('orders-list');
+      const empty = document.getElementById('empty-msg');
+      if (!orders.length) { list.innerHTML = ''; empty.classList.remove('hidden'); empty.querySelector('div').textContent = '這天沒有訂單'; return; }
+      empty.classList.add('hidden');
+      list.innerHTML = orders.map(o => renderOrderCard(o)).join('');
+    }
+
+    function setPayMethod(method) {
+      document.getElementById('pay-cash').className = `flex-1 py-2 rounded-lg text-sm font-medium border-2 transition ${method === '現金' ? 'bg-coffee-700 text-white border-coffee-700' : 'border-coffee-200 text-gray-500'}`;
+      document.getElementById('pay-transfer').className = `flex-1 py-2 rounded-lg text-sm font-medium border-2 transition ${method === '匯款' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-coffee-200 text-gray-500'}`;
+      document.getElementById('pay-cash').dataset.selected = method === '現金' ? '1' : '';
+      document.getElementById('pay-transfer').dataset.selected = method === '匯款' ? '1' : '';
+    }
+
+    function openDetail(order) {
+      currentOrder = order;
+      const info = document.getElementById('detail-info');
+      const summary = order.items.map(i =>
+        `<li>${i.product?.name || '?'} ${i.gram_size}g × ${i.quantity} = $${i.subtotal.toFixed(0)}</li>`
+      ).join('');
+      info.innerHTML = `
+        <div class="font-semibold text-coffee-900">${order.customer?.name || '?'}</div>
+        <ul class="text-sm text-gray-600 list-disc list-inside space-y-0.5">${summary}</ul>
+        <div class="text-sm text-gray-600">小計 $${order.subtotal.toFixed(0)}　折扣 -$${order.discount_amount.toFixed(0)}　實收 <span class="font-bold text-coffee-800">$${order.final_amount.toFixed(0)}</span></div>
+        ${order.credit_paid_at ? `<div class="text-xs text-green-600">還清：${new Date(order.credit_paid_at).toLocaleString('zh-TW')}</div>` : ''}
+      `;
+      setPayMethod(order.payment_method || '現金');
+      document.getElementById('edit-date').value = order.order_date;
+      document.getElementById('edit-status').value = order.status;
+      document.getElementById('edit-discount').value = order.discount_amount;
+      document.getElementById('edit-final').value = order.final_amount;
+      document.getElementById('edit-credit').checked = order.is_credit;
+      document.getElementById('edit-credit-paid').checked = order.credit_paid;
+      document.getElementById('edit-notes').value = order.notes || '';
+      document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeDetail() {
+      document.getElementById('detail-modal').classList.add('hidden');
+      currentOrder = null;
+    }
+
+    async function saveOrder() {
+      if (!currentOrder) return;
+      await fetch(`/api/orders/${currentOrder.id}`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          order_date: document.getElementById('edit-date').value || null,
+          status: document.getElementById('edit-status').value,
+          payment_method: document.getElementById('pay-transfer').dataset.selected ? '匯款' : '現金',
+          discount_amount: parseFloat(document.getElementById('edit-discount').value) || 0,
+          final_amount: parseFloat(document.getElementById('edit-final').value) || 0,
+          is_credit: document.getElementById('edit-credit').checked,
+          credit_paid: document.getElementById('edit-credit-paid').checked,
+          notes: document.getElementById('edit-notes').value || null,
+        }),
+      });
+      closeDetail();
+      loadMonth();
+    }
+
+    document.getElementById('detail-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeDetail();
+    });
+
+    init();
+  </script>
+</body>
+</html>

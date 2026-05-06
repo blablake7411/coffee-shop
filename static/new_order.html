@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新增訂單</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { coffee: { 50:'#fdf8f0',100:'#faebd7',200:'#f5d5a8',300:'#edb96d',400:'#e09a3e',500:'#c97d22',600:'#a8631a',700:'#864e16',800:'#6b3e13',900:'#573310' } } } }
+    }
+  </script>
+</head>
+<body class="bg-coffee-50 min-h-screen pb-24">
+
+  <header class="bg-coffee-800 text-white px-4 py-4 sticky top-0 z-10 shadow">
+    <h1 class="text-xl font-bold">新增訂單</h1>
+  </header>
+
+  <main class="px-4 py-4 max-w-lg mx-auto space-y-5">
+
+    <!-- 日期 -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm">
+      <h2 class="font-semibold text-coffee-800 mb-2">訂單日期</h2>
+      <input type="date" id="order-date" class="w-full border border-coffee-200 rounded-xl px-3 py-2.5 text-sm">
+    </section>
+
+    <!-- 客人姓名（自動提示） -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm">
+      <h2 class="font-semibold text-coffee-800 mb-3">客人</h2>
+      <div class="relative">
+        <input
+          type="text"
+          id="customer-name"
+          placeholder="輸入客人名字..."
+          autocomplete="off"
+          class="w-full border border-coffee-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-coffee-500"
+          oninput="onNameInput()"
+        >
+        <div id="suggestions" class="absolute top-full left-0 right-0 bg-white border border-coffee-200 rounded-xl mt-1 shadow-lg z-20 hidden max-h-48 overflow-y-auto"></div>
+      </div>
+    </section>
+
+    <!-- 品項 -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm">
+      <h2 class="font-semibold text-coffee-800 mb-3">品項</h2>
+      <div id="items-list" class="space-y-3 mb-3"></div>
+      <button onclick="addItem()" class="w-full border-2 border-dashed border-coffee-200 text-coffee-600 py-2.5 rounded-xl text-sm font-medium hover:bg-coffee-50">+ 新增品項</button>
+    </section>
+
+    <!-- 折扣 & 賒帳 -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+      <h2 class="font-semibold text-coffee-800">其他設定</h2>
+      <div>
+        <label class="text-sm text-gray-600">折扣金額（例如：10 代表折抵 $10）</label>
+        <input type="number" id="discount" value="0" min="0" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2.5 text-sm" oninput="updateTotal()">
+      </div>
+      <div>
+        <label class="text-sm text-gray-600">付款方式</label>
+        <div class="flex gap-2 mt-1">
+          <button id="pay-cash" type="button" onclick="setPayMethod('現金')"
+            class="flex-1 py-2 rounded-xl text-sm font-medium border-2 bg-coffee-700 text-white border-coffee-700 transition">現金</button>
+          <button id="pay-transfer" type="button" onclick="setPayMethod('匯款')"
+            class="flex-1 py-2 rounded-xl text-sm font-medium border-2 border-coffee-200 text-gray-500 transition">匯款</button>
+        </div>
+      </div>
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" id="is-credit" class="accent-coffee-600 w-5 h-5">
+        <span class="text-sm font-medium">賒帳（尚未付款）</span>
+      </label>
+      <div>
+        <label class="text-sm text-gray-600">備註</label>
+        <textarea id="notes" rows="2" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2 text-sm"></textarea>
+      </div>
+    </section>
+
+    <!-- 合計 -->
+    <section class="bg-coffee-800 text-white rounded-2xl p-4 shadow">
+      <div class="flex justify-between text-sm mb-1">
+        <span>品項合計</span><span id="display-subtotal">$0</span>
+      </div>
+      <div class="flex justify-between text-sm mb-2">
+        <span>折扣</span><span id="display-discount">-$0</span>
+      </div>
+      <div class="flex justify-between text-xl font-bold border-t border-coffee-600 pt-2">
+        <span>總計</span><span id="display-total">$0</span>
+      </div>
+    </section>
+
+    <button onclick="submitOrder()" class="w-full bg-coffee-700 text-white py-4 rounded-2xl text-lg font-bold shadow-lg active:scale-95 transition">確認送出</button>
+  </main>
+
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-coffee-200 flex justify-around py-1.5 z-40">
+    <a href="/" class="flex flex-col items-center text-gray-400"><span class="text-xl">📋</span><span class="text-xs">今日</span></a>
+    <a href="/static/new_order.html" class="flex flex-col items-center text-coffee-700 font-medium"><span class="text-xl">➕</span><span class="text-xs">新增</span></a>
+    <a href="/static/orders.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">📦</span><span class="text-xs">訂單</span></a>
+    <a href="/static/customers.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">👥</span><span class="text-xs">客戶</span></a>
+    <a href="/static/inventory.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">🏪</span><span class="text-xs">庫存</span></a>
+    <a href="/static/reports.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">📊</span><span class="text-xs">報表</span></a>
+  </nav>
+
+  <script>
+    let products = [];
+    let customers = [];
+    let selectedCustomerId = null;
+    let itemCount = 0;
+
+    document.getElementById('order-date').value = new Date().toLocaleDateString('en-CA');
+
+    async function init() {
+      const [custRes, prodRes] = await Promise.all([
+        fetch('/api/customers/'),
+        fetch('/api/products/'),
+      ]);
+      customers = await custRes.json();
+      products = await prodRes.json();
+      addItem();
+    }
+
+    function setPayMethod(method) {
+      document.getElementById('pay-cash').className = `flex-1 py-2 rounded-xl text-sm font-medium border-2 transition ${method === '現金' ? 'bg-coffee-700 text-white border-coffee-700' : 'border-coffee-200 text-gray-500'}`;
+      document.getElementById('pay-transfer').className = `flex-1 py-2 rounded-xl text-sm font-medium border-2 transition ${method === '匯款' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-coffee-200 text-gray-500'}`;
+    }
+
+    // --- 客人自動提示 ---
+    function onNameInput() {
+      selectedCustomerId = null;
+      const q = document.getElementById('customer-name').value.trim().toLowerCase();
+      const box = document.getElementById('suggestions');
+      if (!q) { box.classList.add('hidden'); return; }
+      const matches = customers.filter(c => c.name.toLowerCase().includes(q));
+      if (!matches.length) { box.classList.add('hidden'); return; }
+      box.innerHTML = matches.map(c =>
+        `<div class="px-4 py-2.5 text-sm cursor-pointer hover:bg-coffee-50 active:bg-coffee-100" onclick="selectCustomer(${c.id}, '${c.name.replace(/'/g,"\\'")}')">
+          ${c.name}
+        </div>`
+      ).join('');
+      box.classList.remove('hidden');
+    }
+
+    function selectCustomer(id, name) {
+      selectedCustomerId = id;
+      document.getElementById('customer-name').value = name;
+      document.getElementById('suggestions').classList.add('hidden');
+    }
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#customer-name') && !e.target.closest('#suggestions')) {
+        document.getElementById('suggestions').classList.add('hidden');
+      }
+    });
+
+    // --- 品項 ---
+    function getPriceBtns(id, product) {
+      const sizes = [
+        { g: 3,  price: product.price_3g },
+        { g: 7,  price: product.price_7g },
+        { g: 14, price: product.price_14g },
+        { g: 28, price: product.price_28g },
+        product.price_custom_grams && product.price_custom_price
+          ? { g: product.price_custom_grams, price: product.price_custom_price }
+          : null,
+      ].filter(s => s && s.price != null);
+      if (!sizes.length) return '<span class="text-xs text-gray-400">尚未設定規格售價</span>';
+      return sizes.map(s =>
+        `<button type="button" onclick="setSize(${id},${s.g},${s.price})"
+          class="px-2.5 py-1.5 text-xs bg-coffee-100 text-coffee-800 rounded-lg font-medium hover:bg-coffee-200 transition">
+          ${s.g}g / $${s.price}
+        </button>`
+      ).join('') +
+      `<button type="button" onclick="setSize(${id},0,0,'custom')"
+        class="px-2.5 py-1.5 text-xs border border-coffee-200 text-coffee-600 rounded-lg hover:bg-coffee-50">
+        自訂
+      </button>`;
+    }
+
+    function addItem() {
+      const id = itemCount++;
+      const div = document.createElement('div');
+      div.id = `item-${id}`;
+      div.className = 'border border-coffee-200 rounded-xl p-3 space-y-2';
+      div.innerHTML = `
+        <div class="flex items-center gap-2">
+          <select id="prod-${id}" class="flex-1 border border-coffee-100 rounded-lg px-2 py-1.5 text-sm" onchange="onProductChange(${id})">
+            <option value="">選商品...</option>
+            ${products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+          </select>
+          <button onclick="removeItem(${id})" class="text-red-400 text-lg leading-none px-1">&times;</button>
+        </div>
+        <div id="size-btns-${id}" class="flex gap-1 flex-wrap"></div>
+        <div id="custom-inputs-${id}" class="hidden grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs text-gray-500">克數</label>
+            <input type="number" id="custom-g-${id}" placeholder="g" min="0.1" step="0.1" class="w-full mt-0.5 border border-coffee-100 rounded-lg px-3 py-1.5 text-sm" oninput="updateTotal()">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">售價 ($)</label>
+            <input type="number" id="custom-price-${id}" placeholder="$" min="0" class="w-full mt-0.5 border border-coffee-100 rounded-lg px-3 py-1.5 text-sm" oninput="updateTotal()">
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 shrink-0">數量</label>
+          <input type="number" id="qty-${id}" value="1" min="1" class="w-20 border border-coffee-100 rounded-lg px-2 py-1.5 text-sm text-center" oninput="updateTotal()">
+          <span id="item-sub-${id}" class="text-sm text-coffee-700 font-medium ml-auto"></span>
+        </div>
+        <input type="hidden" id="gram-${id}" value="0">
+        <input type="hidden" id="price-${id}" value="0">
+      `;
+      document.getElementById('items-list').appendChild(div);
+    }
+
+    function onProductChange(id) {
+      const sel = document.getElementById(`prod-${id}`);
+      const product = products.find(p => p.id === parseInt(sel.value));
+      document.getElementById(`custom-inputs-${id}`).classList.add('hidden');
+      document.getElementById(`gram-${id}`).value = 0;
+      document.getElementById(`price-${id}`).value = 0;
+      document.getElementById(`size-btns-${id}`).innerHTML = product ? getPriceBtns(id, product) : '';
+      updateTotal();
+    }
+
+    function setSize(id, grams, price, mode) {
+      if (mode === 'custom') {
+        document.getElementById(`custom-inputs-${id}`).classList.remove('hidden');
+        document.getElementById(`gram-${id}`).value = 0;
+        document.getElementById(`price-${id}`).value = 0;
+      } else {
+        document.getElementById(`custom-inputs-${id}`).classList.add('hidden');
+        document.getElementById(`gram-${id}`).value = grams;
+        document.getElementById(`price-${id}`).value = price;
+      }
+      updateTotal();
+    }
+
+    function removeItem(id) {
+      document.getElementById(`item-${id}`)?.remove();
+      updateTotal();
+    }
+
+    function updateTotal() {
+      let subtotal = 0;
+      document.querySelectorAll('[id^="item-"]').forEach(itemDiv => {
+        const id = itemDiv.id.replace('item-', '');
+        const customVisible = !document.getElementById(`custom-inputs-${id}`)?.classList.contains('hidden');
+        const gramSize = customVisible
+          ? parseFloat(document.getElementById(`custom-g-${id}`)?.value || 0)
+          : parseFloat(document.getElementById(`gram-${id}`)?.value || 0);
+        const price = customVisible
+          ? parseFloat(document.getElementById(`custom-price-${id}`)?.value || 0)
+          : parseFloat(document.getElementById(`price-${id}`)?.value || 0);
+        const qty = parseInt(document.getElementById(`qty-${id}`)?.value || 1);
+        const sub = price * qty;
+        subtotal += sub;
+        const subEl = document.getElementById(`item-sub-${id}`);
+        if (subEl) subEl.textContent = sub > 0 ? `小計 $${sub.toFixed(0)}` : '';
+      });
+      const discount = parseFloat(document.getElementById('discount').value) || 0;
+      document.getElementById('display-subtotal').textContent = `$${subtotal.toFixed(0)}`;
+      document.getElementById('display-discount').textContent = `-$${discount.toFixed(0)}`;
+      document.getElementById('display-total').textContent = `$${Math.max(0, subtotal - discount).toFixed(0)}`;
+    }
+
+    async function submitOrder() {
+      const name = document.getElementById('customer-name').value.trim();
+      if (!name) { alert('請輸入客人名字'); return; }
+
+      // 找或建客人
+      let customerId = selectedCustomerId;
+      if (!customerId) {
+        const exact = customers.find(c => c.name === name);
+        if (exact) {
+          customerId = exact.id;
+        } else {
+          const res = await fetch('/api/customers/', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name }),
+          });
+          const c = await res.json();
+          customerId = c.id;
+          customers.push(c);
+        }
+      }
+
+      const items = [];
+      let hasError = false;
+      document.querySelectorAll('[id^="item-"]').forEach(itemDiv => {
+        const id = itemDiv.id.replace('item-', '');
+        const productId = parseInt(document.getElementById(`prod-${id}`)?.value || 0);
+        if (!productId) return;
+        const customVisible = !document.getElementById(`custom-inputs-${id}`)?.classList.contains('hidden');
+        const gramSize = customVisible
+          ? parseFloat(document.getElementById(`custom-g-${id}`)?.value || 0)
+          : parseFloat(document.getElementById(`gram-${id}`)?.value || 0);
+        const price = customVisible
+          ? parseFloat(document.getElementById(`custom-price-${id}`)?.value || 0)
+          : parseFloat(document.getElementById(`price-${id}`)?.value || 0);
+        const qty = parseInt(document.getElementById(`qty-${id}`)?.value || 1);
+        if (!gramSize || !price) { hasError = true; return; }
+        items.push({ product_id: productId, gram_size: gramSize, quantity: qty, unit_price: price });
+      });
+
+      if (hasError) { alert('請為所有品項選擇規格和售價'); return; }
+      if (!items.length) { alert('請至少新增一個品項'); return; }
+
+      const res = await fetch('/api/orders/', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          customer_id: customerId,
+          order_date: document.getElementById('order-date').value || null,
+          discount_amount: parseFloat(document.getElementById('discount').value) || 0,
+          payment_method: document.getElementById('pay-transfer').classList.contains('bg-indigo-600') ? '匯款' : '現金',
+          is_credit: document.getElementById('is-credit').checked,
+          notes: document.getElementById('notes').value.trim() || null,
+          items,
+        }),
+      });
+
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        const err = await res.json();
+        alert('建立失敗：' + JSON.stringify(err.detail));
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
