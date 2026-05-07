@@ -160,6 +160,7 @@
   </nav>
 
   <script>
+    const TZ = 'Australia/Sydney';
     let editingProductId = null;
     let editingPurchaseId = null;
     let allProducts = [];
@@ -180,7 +181,7 @@
       renderPurchases(purchases);
       refreshProductSelect(allProducts.filter(p => p.is_active));
       if (!document.getElementById('purchase-date').value) {
-        document.getElementById('purchase-date').value = new Date().toLocaleDateString('en-CA');
+        document.getElementById('purchase-date').value = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
       }
     }
 
@@ -225,7 +226,7 @@
             </div>
             <div class="text-right shrink-0">
               <div class="font-semibold text-sm text-coffee-800">$${r.total_cost.toFixed(0)}</div>
-              <div class="text-xs text-gray-400">${new Date(r.purchased_at).toLocaleDateString('zh-TW')}</div>
+              <div class="text-xs text-gray-400">${new Date(r.purchased_at + 'Z').toLocaleDateString('zh-TW', { timeZone: TZ })}</div>
               <button onclick="openPurchaseEdit(${r.id})" class="text-xs text-coffee-600 underline mt-0.5">編輯</button>
             </div>
           </div>
@@ -237,8 +238,8 @@
       const r = allPurchasesMap[id];
       if (!r) return;
       editingPurchaseId = id;
-      const d = new Date(r.purchased_at);
-      document.getElementById('pe-date').value = d.toLocaleDateString('en-CA');
+      const d = new Date(r.purchased_at + 'Z');
+      document.getElementById('pe-date').value = d.toLocaleDateString('en-CA', { timeZone: TZ });
       document.getElementById('pe-grams').value = r.quantity_grams;
       document.getElementById('pe-total').value = r.total_cost;
       document.getElementById('pe-notes').value = r.notes || '';

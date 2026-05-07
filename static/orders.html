@@ -145,6 +145,7 @@
       '已出貨':'bg-purple-100 text-purple-800','完成':'bg-green-100 text-green-800','退款':'bg-red-100 text-red-800',
     };
 
+    const TZ = 'Australia/Sydney';
     let currentYear, currentMonth;
     let allOrders = [];
     let ordersByDate = {};
@@ -224,9 +225,10 @@
     }
 
     function init() {
-      const today = new Date();
-      currentYear = today.getFullYear();
-      currentMonth = today.getMonth() + 1;
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+      const [ty, tm] = todayStr.split('-');
+      currentYear = parseInt(ty);
+      currentMonth = parseInt(tm);
       document.getElementById('month-picker').addEventListener('change', function() {
         const [y, m] = this.value.split('-');
         currentYear = parseInt(y);
@@ -264,9 +266,9 @@
       if (overrideDate) {
         selectDay(overrideDate);
       } else {
-        const today = new Date();
-        const todayStr = today.toLocaleDateString('en-CA');
-        if (today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth) {
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+        const [ty, tm] = todayStr.split('-');
+        if (parseInt(ty) === currentYear && parseInt(tm) === currentMonth) {
           selectDay(todayStr);
         } else {
           clearDaySelection();
@@ -279,7 +281,7 @@
       const rawFirstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
       const firstDay = (rawFirstDay + 6) % 7; // 0=Mon ... 6=Sun
       const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-      const today = new Date().toLocaleDateString('en-CA');
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
       let cells = '';
 
       for (let i = 0; i < firstDay; i++) {
@@ -355,7 +357,7 @@
         <div class="font-semibold text-coffee-900">${order.customer?.name || '?'}</div>
         <ul class="text-sm text-gray-600 list-disc list-inside space-y-0.5">${summary}</ul>
         <div class="text-sm text-gray-600">小計 $${order.subtotal.toFixed(0)}　折扣 -$${order.discount_amount.toFixed(0)}　實收 <span class="font-bold text-coffee-800">$${order.final_amount.toFixed(0)}</span></div>
-        ${order.credit_paid_at ? `<div class="text-xs text-green-600">還清：${new Date(order.credit_paid_at + 'Z').toLocaleString('zh-TW')}</div>` : ''}
+        ${order.credit_paid_at ? `<div class="text-xs text-green-600">還清：${new Date(order.credit_paid_at + 'Z').toLocaleString('zh-TW', { timeZone: TZ })}</div>` : ''}
       `;
       setPayMethod(order.payment_method || '現金');
       document.getElementById('edit-date').value = order.order_date;

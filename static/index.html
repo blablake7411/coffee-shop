@@ -64,10 +64,11 @@
 
     let currentOrderId = null;
 
-    document.getElementById('today-date').textContent = new Date().toLocaleDateString('zh-TW', {month:'long',day:'numeric',weekday:'short'});
+    const TZ = 'Australia/Sydney';
+    document.getElementById('today-date').textContent = new Date().toLocaleDateString('zh-TW', {month:'long',day:'numeric',weekday:'short', timeZone: TZ});
 
     async function load() {
-      const todayStr = new Date().toLocaleDateString('en-CA');
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
       const res = await fetch(`/api/orders/today?local_date=${todayStr}`);
       const orders = await res.json();
       render(orders);
@@ -99,7 +100,7 @@
             </div>
             <div class="text-right shrink-0">
               <div class="text-lg font-bold text-coffee-800">$${o.final_amount.toFixed(0)}</div>
-              <div class="text-xs text-gray-400">${new Date(o.created_at + 'Z').toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}</div>
+              <div class="text-xs text-gray-400">${new Date(o.created_at + 'Z').toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit', timeZone: TZ})}</div>
             </div>
           </div>
         </div>`;

@@ -90,8 +90,15 @@ def _order_count_in_range(db: Session, start: date, end: date) -> int:
 
 
 @router.get("/weekly")
-def weekly_report(week_offset: int = 0, db: Session = Depends(get_db)):
-    ref = date.today() - timedelta(weeks=week_offset)
+def weekly_report(week_offset: int = 0, local_date: Optional[str] = None, db: Session = Depends(get_db)):
+    if local_date:
+        try:
+            base = date.fromisoformat(local_date)
+        except ValueError:
+            base = date.today()
+    else:
+        base = date.today()
+    ref = base - timedelta(weeks=week_offset)
     start, end = _week_range(ref)
     revenue = _revenue_in_range(db, start, end)
     cost = _purchase_cost_in_range(db, start, end)

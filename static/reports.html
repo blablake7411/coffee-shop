@@ -80,10 +80,12 @@
   </nav>
 
   <script>
+    const TZ = 'Australia/Sydney';
     let currentTab = 'weekly';
     let weekOffset = 0;
-    const today = new Date();
-    let monthYear = today.getFullYear(), monthMonth = today.getMonth() + 1;
+    const todayInTZ = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+    const [_ty, _tm] = todayInTZ.split('-');
+    let monthYear = parseInt(_ty), monthMonth = parseInt(_tm);
 
     function switchTab(tab) {
       currentTab = tab;
@@ -109,7 +111,8 @@
     }
 
     async function loadWeekly() {
-      const res = await fetch(`/api/reports/weekly?week_offset=${weekOffset}`);
+      const localDate = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+      const res = await fetch(`/api/reports/weekly?week_offset=${weekOffset}&local_date=${localDate}`);
       const d = await res.json();
       document.getElementById('weekly-period').textContent = d.period;
       const dailyRows = d.daily_breakdown.map(day => `
@@ -169,8 +172,7 @@
     }
 
     function initQuarterly() {
-      const y = today.getFullYear();
-      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const [y, m] = todayInTZ.split('-');
       if (!document.getElementById('q-start').value) {
         document.getElementById('q-start').value = `${y}-01`;
         document.getElementById('q-end').value = `${y}-${m}`;
