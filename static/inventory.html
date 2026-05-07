@@ -5,62 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>庫存管理</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script>
     tailwind.config = {
-      theme: { extend: { colors: { coffee: { 50:'#fdf8f0',100:'#faebd7',200:'#f5d5a8',300:'#edb96d',400:'#e09a3e',500:'#c97d22',600:'#a8631a',700:'#864e16',800:'#6b3e13',900:'#573310' } } } }
+      theme: { extend: { colors: {
+        coffee: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+        brand: '#D85A30'
+      }}}
     }
   </script>
 </head>
-<body class="bg-coffee-50 min-h-screen pb-20">
+<body class="bg-gray-50 min-h-screen pb-20">
 
-  <header class="bg-coffee-800 text-white px-4 py-4 sticky top-0 z-10 shadow">
-    <h1 class="text-xl font-bold">庫存管理</h1>
+  <header class="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
+    <h1 class="text-xl font-bold text-gray-900">庫存管理</h1>
   </header>
 
   <main class="px-3 py-4 max-w-2xl mx-auto space-y-5">
 
     <!-- 商品列表 -->
-    <section class="bg-white rounded-2xl shadow-sm overflow-hidden">
-      <div class="flex items-center justify-between px-4 py-3 border-b border-coffee-100">
-        <h2 class="font-semibold text-coffee-800">商品庫存</h2>
-        <button onclick="openNewProduct()" class="bg-coffee-700 text-white text-sm px-3 py-1.5 rounded-lg">+ 新增商品</button>
+    <section class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <h2 class="font-semibold text-gray-900">商品庫存</h2>
+        <button onclick="openNewProduct()" class="bg-brand text-white text-sm px-3 py-1.5 rounded-lg">+ 新增商品</button>
       </div>
-      <div id="products-list" class="divide-y divide-coffee-50"></div>
+      <div id="products-list" class="divide-y divide-gray-50"></div>
     </section>
 
     <!-- 登記進貨 -->
-    <section class="bg-white rounded-2xl shadow-sm p-4">
-      <h2 class="font-semibold text-coffee-800 mb-3">登記進貨</h2>
+    <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <h2 class="font-semibold text-gray-900 mb-3">登記進貨</h2>
       <div class="space-y-3">
-        <select id="purchase-product" class="w-full border border-coffee-200 rounded-xl px-3 py-2.5 text-sm">
+        <select id="purchase-product" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
           <option value="">選擇商品...</option>
         </select>
         <div>
           <label class="text-xs text-gray-500">進貨日期</label>
-          <input type="date" id="purchase-date" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2 text-sm">
+          <input type="date" id="purchase-date" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs text-gray-500">進貨克數</label>
-            <input type="number" id="purchase-grams" placeholder="克數" min="1" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2 text-sm" oninput="calcCost()">
+            <input type="number" id="purchase-grams" placeholder="克數" min="1" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm" oninput="calcCost()">
           </div>
           <div>
             <label class="text-xs text-gray-500">總進貨金額 ($)</label>
-            <input type="number" id="purchase-total-amount" placeholder="總金額" min="0" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2 text-sm" oninput="calcCost()">
+            <input type="number" id="purchase-total-amount" placeholder="總金額" min="0" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm" oninput="calcCost()">
           </div>
         </div>
-        <div class="text-sm text-coffee-700 font-medium" id="purchase-cost-display"></div>
-        <input id="purchase-notes" placeholder="備註（選填）" class="w-full border border-coffee-200 rounded-xl px-3 py-2 text-sm">
-        <button onclick="addPurchase()" class="w-full bg-coffee-700 text-white py-3 rounded-xl font-medium">確認進貨</button>
+        <div class="text-sm text-brand font-medium" id="purchase-cost-display"></div>
+        <input id="purchase-notes" placeholder="備註（選填）" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        <button onclick="addPurchase()" class="w-full bg-brand text-white py-3 rounded-xl font-medium">確認進貨</button>
       </div>
     </section>
 
     <!-- 近期進貨記錄 -->
-    <section class="bg-white rounded-2xl shadow-sm overflow-hidden">
-      <div class="px-4 py-3 border-b border-coffee-100">
-        <h2 class="font-semibold text-coffee-800">近期進貨記錄</h2>
+    <section class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100">
+        <h2 class="font-semibold text-gray-900">近期進貨記錄</h2>
       </div>
-      <div id="purchase-list" class="divide-y divide-coffee-50"></div>
+      <div id="purchase-list" class="divide-y divide-gray-50"></div>
     </section>
   </main>
 
@@ -68,31 +72,31 @@
   <div id="purchase-edit-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center">
     <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-bold text-coffee-900">編輯進貨記錄</h2>
+        <h2 class="text-lg font-bold text-gray-900">編輯進貨記錄</h2>
         <button onclick="closePurchaseEdit()" class="text-gray-400 text-2xl leading-none">&times;</button>
       </div>
       <div class="space-y-3">
         <div>
           <label class="text-xs text-gray-500">進貨日期</label>
-          <input type="date" id="pe-date" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2 text-sm">
+          <input type="date" id="pe-date" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs text-gray-500">進貨克數</label>
-            <input type="number" id="pe-grams" min="1" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2 text-sm" oninput="calcPeEdit()">
+            <input type="number" id="pe-grams" min="1" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm" oninput="calcPeEdit()">
           </div>
           <div>
             <label class="text-xs text-gray-500">總金額 ($)</label>
-            <input type="number" id="pe-total" min="0" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2 text-sm" oninput="calcPeEdit()">
+            <input type="number" id="pe-total" min="0" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm" oninput="calcPeEdit()">
           </div>
         </div>
-        <div class="text-sm text-coffee-700 font-medium" id="pe-cost-display"></div>
+        <div class="text-sm text-brand font-medium" id="pe-cost-display"></div>
         <div>
           <label class="text-xs text-gray-500">備註</label>
-          <input id="pe-notes" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2 text-sm">
+          <input id="pe-notes" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm">
         </div>
       </div>
-      <button onclick="savePurchaseEdit()" class="w-full mt-5 bg-coffee-700 text-white py-3 rounded-xl font-medium">儲存</button>
+      <button onclick="savePurchaseEdit()" class="w-full mt-5 bg-brand text-white py-3 rounded-xl font-medium">儲存</button>
     </div>
   </div>
 
@@ -100,63 +104,63 @@
   <div id="product-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center">
     <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-bold text-coffee-900" id="product-modal-title">新增商品</h2>
+        <h2 class="text-lg font-bold text-gray-900" id="product-modal-title">新增商品</h2>
         <button onclick="closeProductModal()" class="text-gray-400 text-2xl leading-none">&times;</button>
       </div>
       <div class="space-y-3">
         <div>
           <label class="text-sm text-gray-600">商品名稱 *</label>
-          <input id="pm-name" class="w-full mt-1 border border-coffee-200 rounded-xl px-3 py-2.5">
+          <input id="pm-name" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2.5">
         </div>
         <div>
           <label class="text-sm text-gray-600 mb-2 block">各規格售價（未設定的規格不會顯示）</label>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="text-xs text-gray-400">3g 售價 ($)</label>
-              <input type="number" id="pm-p3" min="0" class="w-full mt-0.5 border border-coffee-200 rounded-xl px-3 py-2">
+              <input type="number" id="pm-p3" min="0" class="w-full mt-0.5 border border-gray-200 rounded-xl px-3 py-2">
             </div>
             <div>
               <label class="text-xs text-gray-400">7g 售價 ($)</label>
-              <input type="number" id="pm-p7" min="0" class="w-full mt-0.5 border border-coffee-200 rounded-xl px-3 py-2">
+              <input type="number" id="pm-p7" min="0" class="w-full mt-0.5 border border-gray-200 rounded-xl px-3 py-2">
             </div>
             <div>
               <label class="text-xs text-gray-400">14g 售價 ($)</label>
-              <input type="number" id="pm-p14" min="0" class="w-full mt-0.5 border border-coffee-200 rounded-xl px-3 py-2">
+              <input type="number" id="pm-p14" min="0" class="w-full mt-0.5 border border-gray-200 rounded-xl px-3 py-2">
             </div>
             <div>
               <label class="text-xs text-gray-400">28g 售價 ($)</label>
-              <input type="number" id="pm-p28" min="0" class="w-full mt-0.5 border border-coffee-200 rounded-xl px-3 py-2">
+              <input type="number" id="pm-p28" min="0" class="w-full mt-0.5 border border-gray-200 rounded-xl px-3 py-2">
             </div>
           </div>
-          <div class="border-t border-coffee-100 pt-2">
+          <div class="border-t border-gray-100 pt-2 mt-2">
             <label class="text-xs text-gray-500 mb-1 block">自訂規格（選填）</label>
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="text-xs text-gray-400">克數</label>
-                <input type="number" id="pm-custom-g" min="0" class="w-full mt-0.5 border border-coffee-200 rounded-xl px-3 py-2">
+                <input type="number" id="pm-custom-g" min="0" class="w-full mt-0.5 border border-gray-200 rounded-xl px-3 py-2">
               </div>
               <div>
                 <label class="text-xs text-gray-400">售價 ($)</label>
-                <input type="number" id="pm-custom-p" min="0" class="w-full mt-0.5 border border-coffee-200 rounded-xl px-3 py-2">
+                <input type="number" id="pm-custom-p" min="0" class="w-full mt-0.5 border border-gray-200 rounded-xl px-3 py-2">
               </div>
             </div>
           </div>
         </div>
         <div class="flex gap-2 pt-1">
-          <button onclick="submitProduct()" class="flex-1 bg-coffee-700 text-white py-3 rounded-xl font-medium">儲存</button>
-          <button onclick="closeProductModal()" class="flex-1 border border-coffee-200 text-gray-500 py-3 rounded-xl">取消</button>
+          <button onclick="submitProduct()" class="flex-1 bg-brand text-white py-3 rounded-xl font-medium">儲存</button>
+          <button onclick="closeProductModal()" class="flex-1 border border-gray-200 text-gray-500 py-3 rounded-xl">取消</button>
         </div>
       </div>
     </div>
   </div>
 
-  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-coffee-200 flex justify-around py-1.5 z-40">
-    <a href="/" class="flex flex-col items-center text-gray-400"><span class="text-xl">📋</span><span class="text-xs">今日</span></a>
-    <a href="/static/new_order.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">➕</span><span class="text-xs">新增</span></a>
-    <a href="/static/orders.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">📦</span><span class="text-xs">訂單</span></a>
-    <a href="/static/customers.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">👥</span><span class="text-xs">客戶</span></a>
-    <a href="/static/inventory.html" class="flex flex-col items-center text-coffee-700 font-medium"><span class="text-xl">🏪</span><span class="text-xs">庫存</span></a>
-    <a href="/static/reports.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">📊</span><span class="text-xs">報表</span></a>
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-1.5 z-40">
+    <a href="/" class="flex flex-col items-center text-gray-400"><i class="ti ti-calendar-event text-xl"></i><span class="text-xs">今日</span></a>
+    <a href="/static/new_order.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-plus text-xl"></i><span class="text-xs">新增</span></a>
+    <a href="/static/orders.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-package text-xl"></i><span class="text-xs">訂單</span></a>
+    <a href="/static/customers.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-users text-xl"></i><span class="text-xs">客戶</span></a>
+    <a href="/static/inventory.html" class="flex flex-col items-center text-brand font-medium"><i class="ti ti-box text-xl"></i><span class="text-xs">庫存</span></a>
+    <a href="/static/reports.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-chart-bar text-xl"></i><span class="text-xs">報表</span></a>
   </nav>
 
   <script>
@@ -167,7 +171,7 @@
     let allPurchasesMap = {};
 
     function priceTag(label, val) {
-      return val != null ? `<span class="text-xs bg-coffee-50 text-coffee-700 px-1.5 py-0.5 rounded">${label}/$${val}</span>` : '';
+      return val != null ? `<span class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">${label}/$${val}</span>` : '';
     }
 
     async function load() {
@@ -199,12 +203,12 @@
         <div class="px-4 py-3">
           <div class="flex items-start gap-3">
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-coffee-900">${p.name}</div>
+              <div class="font-medium text-gray-900">${p.name}</div>
               <div class="flex flex-wrap gap-1 mt-1">${prices || '<span class="text-xs text-gray-400">未設定售價</span>'}</div>
               <div class="text-xs text-gray-400 mt-1">庫存 ${p.stock_grams.toFixed(0)}g</div>
             </div>
             <div class="flex gap-1.5 shrink-0 mt-0.5">
-              <button onclick="openEditProduct(${p.id})" class="text-xs px-2.5 py-1.5 bg-coffee-100 text-coffee-800 rounded-lg">編輯</button>
+              <button onclick="openEditProduct(${p.id})" class="text-xs px-2.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg">編輯</button>
               <button onclick="deactivate(${p.id})" class="text-xs px-2.5 py-1.5 bg-red-50 text-red-600 rounded-lg">下架</button>
             </div>
           </div>
@@ -221,13 +225,13 @@
         <div class="px-4 py-3">
           <div class="flex justify-between items-start">
             <div>
-              <div class="font-medium text-sm text-coffee-900">${r.product?.name || '?'}</div>
+              <div class="font-medium text-sm text-gray-900">${r.product?.name || '?'}</div>
               <div class="text-xs text-gray-500">${r.quantity_grams}g × $${r.cost_per_gram.toFixed(4)}/g${r.notes ? '　' + r.notes : ''}</div>
             </div>
             <div class="text-right shrink-0">
-              <div class="font-semibold text-sm text-coffee-800">$${r.total_cost.toFixed(0)}</div>
+              <div class="font-semibold text-sm text-gray-900">$${r.total_cost.toFixed(0)}</div>
               <div class="text-xs text-gray-400">${new Date(r.purchased_at + 'Z').toLocaleDateString('zh-TW', { timeZone: TZ })}</div>
-              <button onclick="openPurchaseEdit(${r.id})" class="text-xs text-coffee-600 underline mt-0.5">編輯</button>
+              <button onclick="openPurchaseEdit(${r.id})" class="text-xs text-brand underline mt-0.5">編輯</button>
             </div>
           </div>
         </div>

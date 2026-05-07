@@ -5,35 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>今日訂單</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script>
     tailwind.config = {
-      theme: { extend: { colors: { coffee: { 50:'#fdf8f0',100:'#faebd7',200:'#f5d5a8',300:'#edb96d',400:'#e09a3e',500:'#c97d22',600:'#a8631a',700:'#864e16',800:'#6b3e13',900:'#573310' } } } }
+      theme: { extend: { colors: {
+        coffee: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+        brand: '#D85A30'
+      }}}
     }
   </script>
 </head>
-<body class="bg-coffee-50 min-h-screen pb-20">
+<body class="bg-gray-50 min-h-screen pb-20">
 
-  <header class="bg-coffee-800 text-white px-4 py-4 flex items-center justify-between sticky top-0 z-10 shadow">
-    <h1 class="text-xl font-bold">今日訂單</h1>
+  <header class="bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between sticky top-0 z-10">
+    <h1 class="text-xl font-bold text-gray-900">今日訂單</h1>
     <div class="text-right">
-      <div class="text-xs text-coffee-300" id="today-date"></div>
-      <div class="text-lg font-semibold" id="today-total">$0</div>
+      <div class="text-xs text-gray-400" id="today-date"></div>
+      <div class="text-lg font-semibold text-brand" id="today-total">$0</div>
     </div>
   </header>
 
   <main class="px-3 py-4 max-w-lg mx-auto">
     <div id="orders-list" class="space-y-3"></div>
-    <div id="empty-msg" class="text-center text-coffee-400 py-16 hidden">
+    <div id="empty-msg" class="text-center text-gray-400 py-16 hidden">
       <div class="text-5xl mb-3">☕</div>
       <div class="text-lg">今天還沒有訂單</div>
     </div>
-
   </main>
 
   <!-- 狀態快改 Modal -->
   <div id="status-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end justify-center">
     <div class="bg-white w-full max-w-lg rounded-t-2xl p-5">
-      <div class="text-center font-semibold text-coffee-800 mb-1" id="modal-customer-name"></div>
+      <div class="text-center font-semibold text-gray-900 mb-1" id="modal-customer-name"></div>
       <div class="text-center text-sm text-gray-500 mb-4" id="modal-order-summary"></div>
       <p class="text-sm font-medium text-gray-600 mb-2">變更狀態：</p>
       <div class="grid grid-cols-2 gap-2 mb-3" id="status-buttons"></div>
@@ -43,13 +46,13 @@
   </div>
 
   <!-- 底部導覽 -->
-  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-coffee-200 flex justify-around py-1.5 z-40">
-    <a href="/" class="flex flex-col items-center text-coffee-700 font-medium"><span class="text-xl">📋</span><span class="text-xs">今日</span></a>
-    <a href="/static/new_order.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">➕</span><span class="text-xs">新增</span></a>
-    <a href="/static/orders.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">📦</span><span class="text-xs">訂單</span></a>
-    <a href="/static/customers.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">👥</span><span class="text-xs">客戶</span></a>
-    <a href="/static/inventory.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">🏪</span><span class="text-xs">庫存</span></a>
-    <a href="/static/reports.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">📊</span><span class="text-xs">報表</span></a>
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-1.5 z-40">
+    <a href="/" class="flex flex-col items-center text-brand font-medium"><i class="ti ti-calendar-event text-xl"></i><span class="text-xs">今日</span></a>
+    <a href="/static/new_order.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-plus text-xl"></i><span class="text-xs">新增</span></a>
+    <a href="/static/orders.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-package text-xl"></i><span class="text-xs">訂單</span></a>
+    <a href="/static/customers.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-users text-xl"></i><span class="text-xs">客戶</span></a>
+    <a href="/static/inventory.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-box text-xl"></i><span class="text-xs">庫存</span></a>
+    <a href="/static/reports.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-chart-bar text-xl"></i><span class="text-xs">報表</span></a>
   </nav>
 
   <script>
@@ -74,38 +77,52 @@
       render(orders);
     }
 
+    function renderCard(o) {
+      const itemSummary = o.items.map(i => `${i.product?.name || '?'} ${i.gram_size}g×${i.quantity}`).join('、');
+      const creditBadge = o.is_credit
+        ? `<span class="text-xs px-2 py-0.5 rounded-full ${o.credit_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.credit_paid ? '賒帳已還' : '賒帳未還'}</span>`
+        : '';
+      return `
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 cursor-pointer active:scale-95 transition" onclick="openModal(${o.id}, '${(o.customer?.name||'').replace(/'/g,"\\'")}', '${itemSummary.replace(/'/g,"\\'")}')">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-gray-900 text-base truncate">${o.customer?.name || '未知客人'}</div>
+            <div class="text-xs text-gray-400 mt-0.5 truncate">${itemSummary || '無品項'}</div>
+            <div class="flex flex-wrap gap-1 mt-2">
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[o.status]||'bg-gray-100 text-gray-700'}">${o.status}</span>
+              ${creditBadge}
+            </div>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="text-lg font-bold text-gray-900">$${o.final_amount.toFixed(0)}</div>
+            <div class="text-xs text-gray-400">${new Date(o.created_at + 'Z').toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit', timeZone: TZ})}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
     function render(orders) {
       const list = document.getElementById('orders-list');
       const empty = document.getElementById('empty-msg');
       if (orders.length === 0) { list.innerHTML=''; empty.classList.remove('hidden'); return; }
       empty.classList.add('hidden');
 
-      let total = 0;
-      list.innerHTML = orders.map(o => {
-        if (o.status !== '退款') total += o.final_amount;
-        const itemSummary = o.items.map(i => `${i.product?.name || '?'} ${i.gram_size}g×${i.quantity}`).join('、');
-        const creditBadge = o.is_credit
-          ? `<span class="text-xs px-2 py-0.5 rounded-full ${o.credit_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.credit_paid ? '賒帳已還' : '賒帳未還'}</span>`
-          : '';
-        return `
-        <div class="bg-white rounded-2xl shadow-sm p-4 cursor-pointer active:scale-95 transition" onclick="openModal(${o.id}, '${(o.customer?.name||'').replace(/'/g,"\\'")}', '${itemSummary.replace(/'/g,"\\'")}')">
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex-1 min-w-0">
-              <div class="font-semibold text-coffee-900 text-base truncate">${o.customer?.name || '未知客人'}</div>
-              <div class="text-xs text-gray-500 mt-0.5 truncate">${itemSummary || '無品項'}</div>
-              <div class="flex flex-wrap gap-1 mt-2">
-                <span class="text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[o.status]||'bg-gray-100 text-gray-700'}">${o.status}</span>
-                ${creditBadge}
-              </div>
-            </div>
-            <div class="text-right shrink-0">
-              <div class="text-lg font-bold text-coffee-800">$${o.final_amount.toFixed(0)}</div>
-              <div class="text-xs text-gray-400">${new Date(o.created_at + 'Z').toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit', timeZone: TZ})}</div>
-            </div>
-          </div>
-        </div>`;
-      }).join('');
+      const active = orders.filter(o => ['待確認','處理中','已出貨'].includes(o.status));
+      const done = orders.filter(o => ['完成','退款'].includes(o.status));
 
+      let total = 0;
+      orders.forEach(o => { if (o.status !== '退款') total += o.final_amount; });
+
+      let html = '';
+      if (active.length) {
+        html += `<div class="text-xs font-semibold text-gray-400 tracking-wide mb-2 px-1">進行中</div>`;
+        html += `<div class="space-y-3">${active.map(renderCard).join('')}</div>`;
+      }
+      if (done.length) {
+        html += `<div class="text-xs font-semibold text-gray-400 tracking-wide mb-2 ${active.length ? 'mt-5' : ''} px-1">已完成</div>`;
+        html += `<div class="space-y-3 opacity-60">${done.map(renderCard).join('')}</div>`;
+      }
+      list.innerHTML = html;
       document.getElementById('today-total').textContent = '$' + total.toFixed(0);
     }
 
@@ -115,7 +132,7 @@
       document.getElementById('modal-order-summary').textContent = summary;
       const btns = document.getElementById('status-buttons');
       btns.innerHTML = STATUSES.map(s => `
-        <button onclick="changeStatus('${s}')" class="py-3 rounded-xl text-sm font-medium border-2 border-coffee-200 hover:bg-coffee-100 active:bg-coffee-200 transition ${STATUS_COLORS[s]}">${s}</button>
+        <button onclick="changeStatus('${s}')" class="py-3 rounded-xl text-sm font-medium border-2 border-gray-200 hover:bg-gray-50 active:bg-gray-100 transition ${STATUS_COLORS[s]}">${s}</button>
       `).join('');
       document.getElementById('status-modal').classList.remove('hidden');
     }

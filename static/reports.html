@@ -5,22 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>報表</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script>
     tailwind.config = {
-      theme: { extend: { colors: { coffee: { 50:'#fdf8f0',100:'#faebd7',200:'#f5d5a8',300:'#edb96d',400:'#e09a3e',500:'#c97d22',600:'#a8631a',700:'#864e16',800:'#6b3e13',900:'#573310' } } } }
+      theme: { extend: { colors: {
+        coffee: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+        brand: '#D85A30'
+      }}}
     }
   </script>
 </head>
-<body class="bg-coffee-50 min-h-screen pb-20">
+<body class="bg-gray-50 min-h-screen pb-20">
 
-  <header class="bg-coffee-800 text-white px-4 py-4 sticky top-0 z-10 shadow">
-    <h1 class="text-xl font-bold">報表</h1>
+  <header class="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
+    <h1 class="text-xl font-bold text-gray-900">報表</h1>
   </header>
 
   <!-- 分頁切換 -->
-  <div class="bg-white border-b border-coffee-100 px-4 pt-3 pb-0 sticky top-14 z-10">
-    <div class="flex gap-0 border-b border-coffee-200">
-      <button onclick="switchTab('weekly')" id="tab-weekly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-coffee-700 text-coffee-800">週報</button>
+  <div class="bg-white border-b border-gray-200 px-4 pt-3 pb-0 sticky top-14 z-10">
+    <div class="flex gap-0 border-b border-gray-200">
+      <button onclick="switchTab('weekly')" id="tab-weekly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-brand text-brand">週報</button>
       <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">月報</button>
       <button onclick="switchTab('quarterly')" id="tab-quarterly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">季報</button>
     </div>
@@ -31,9 +35,9 @@
     <!-- 週報 -->
     <div id="panel-weekly">
       <div class="flex items-center justify-between mb-4 gap-2">
-        <button onclick="weekOffset++;loadWeekly()" class="p-2 rounded-xl bg-white shadow-sm text-coffee-700 font-bold text-lg">&#8249;</button>
-        <span id="weekly-period" class="text-sm font-medium text-coffee-800"></span>
-        <button onclick="weekOffset--;loadWeekly()" class="p-2 rounded-xl bg-white shadow-sm text-coffee-700 font-bold text-lg">&#8250;</button>
+        <button onclick="weekOffset++;loadWeekly()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8249;</button>
+        <span id="weekly-period" class="text-sm font-medium text-gray-800"></span>
+        <button onclick="weekOffset--;loadWeekly()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8250;</button>
       </div>
       <div id="weekly-content"></div>
     </div>
@@ -41,48 +45,69 @@
     <!-- 月報 -->
     <div id="panel-monthly" class="hidden">
       <div class="flex items-center justify-between mb-4 gap-2">
-        <button onclick="prevMonth()" class="p-2 rounded-xl bg-white shadow-sm text-coffee-700 font-bold text-lg">&#8249;</button>
-        <span id="monthly-period" class="text-sm font-medium text-coffee-800"></span>
-        <button onclick="nextMonth()" class="p-2 rounded-xl bg-white shadow-sm text-coffee-700 font-bold text-lg">&#8250;</button>
+        <button onclick="prevMonth()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8249;</button>
+        <span id="monthly-period" class="text-sm font-medium text-gray-800"></span>
+        <button onclick="nextMonth()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8250;</button>
       </div>
       <div id="monthly-content"></div>
     </div>
 
     <!-- 季報 -->
     <div id="panel-quarterly" class="hidden">
-      <div class="flex items-center gap-3 mb-4">
+      <div class="flex items-center gap-3 mb-3">
         <div class="flex-1">
           <div class="text-xs text-gray-500 mb-1">從</div>
           <input type="month" id="q-start" onchange="loadQuarterly()"
-            class="w-full border border-coffee-200 rounded-xl px-3 py-2 text-sm bg-white">
+            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
         </div>
         <div class="text-gray-400 text-lg mt-4">—</div>
         <div class="flex-1">
           <div class="text-xs text-gray-500 mb-1">到</div>
           <input type="month" id="q-end" onchange="loadQuarterly()"
-            class="w-full border border-coffee-200 rounded-xl px-3 py-2 text-sm bg-white">
+            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
         </div>
       </div>
+      <!-- 淨利計算模式切換 -->
+      <div class="flex bg-gray-100 rounded-xl p-1 mb-4">
+        <button id="mode-cost" onclick="setSplitMode('cost')"
+          class="flex-1 py-1.5 rounded-lg text-sm font-medium transition bg-white text-gray-900 shadow-sm">
+          扣除成本
+        </button>
+        <button id="mode-direct" onclick="setSplitMode('direct')"
+          class="flex-1 py-1.5 rounded-lg text-sm font-medium transition text-gray-500">
+          直接分成
+        </button>
+      </div>
       <div id="quarterly-content"></div>
-      <button onclick="syncSheets()" class="w-full mt-5 flex items-center justify-center gap-2 border-2 border-coffee-300 text-coffee-700 py-3 rounded-xl font-medium hover:bg-coffee-50 transition">
-        <span>同步到 Google Sheets</span>
+      <button onclick="exportPDF()" class="w-full mt-5 flex items-center justify-center gap-2 bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition">
+        <i class="ti ti-file-type-pdf text-lg"></i>
+        <span>匯出 PDF</span>
       </button>
     </div>
   </main>
 
-  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-coffee-200 flex justify-around py-1.5 z-40">
-    <a href="/" class="flex flex-col items-center text-gray-400"><span class="text-xl">📋</span><span class="text-xs">今日</span></a>
-    <a href="/static/new_order.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">➕</span><span class="text-xs">新增</span></a>
-    <a href="/static/orders.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">📦</span><span class="text-xs">訂單</span></a>
-    <a href="/static/customers.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">👥</span><span class="text-xs">客戶</span></a>
-    <a href="/static/inventory.html" class="flex flex-col items-center text-gray-400"><span class="text-xl">🏪</span><span class="text-xs">庫存</span></a>
-    <a href="/static/reports.html" class="flex flex-col items-center text-coffee-700 font-medium"><span class="text-xl">📊</span><span class="text-xs">報表</span></a>
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-1.5 z-40">
+    <a href="/" class="flex flex-col items-center text-gray-400"><i class="ti ti-calendar-event text-xl"></i><span class="text-xs">今日</span></a>
+    <a href="/static/new_order.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-plus text-xl"></i><span class="text-xs">新增</span></a>
+    <a href="/static/orders.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-package text-xl"></i><span class="text-xs">訂單</span></a>
+    <a href="/static/customers.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-users text-xl"></i><span class="text-xs">客戶</span></a>
+    <a href="/static/inventory.html" class="flex flex-col items-center text-gray-400"><i class="ti ti-box text-xl"></i><span class="text-xs">庫存</span></a>
+    <a href="/static/reports.html" class="flex flex-col items-center text-brand font-medium"><i class="ti ti-chart-bar text-xl"></i><span class="text-xs">報表</span></a>
   </nav>
 
   <script>
     const TZ = 'Australia/Sydney';
     let currentTab = 'weekly';
     let weekOffset = 0;
+    let splitMode = 'cost';
+    let lastQuarterlyData = null;
+
+    function setSplitMode(mode) {
+      splitMode = mode;
+      document.getElementById('mode-cost').className = `flex-1 py-1.5 rounded-lg text-sm font-medium transition ${mode === 'cost' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`;
+      document.getElementById('mode-direct').className = `flex-1 py-1.5 rounded-lg text-sm font-medium transition ${mode === 'direct' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`;
+      if (lastQuarterlyData) renderQuarterly(lastQuarterlyData);
+    }
     const todayInTZ = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
     const [_ty, _tm] = todayInTZ.split('-');
     let monthYear = parseInt(_ty), monthMonth = parseInt(_tm);
@@ -92,8 +117,8 @@
       ['weekly','monthly','quarterly'].forEach(t => {
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
         const btn = document.getElementById(`tab-${t}`);
-        btn.classList.toggle('border-coffee-700', t === tab);
-        btn.classList.toggle('text-coffee-800', t === tab);
+        btn.classList.toggle('border-brand', t === tab);
+        btn.classList.toggle('text-brand', t === tab);
         btn.classList.toggle('border-transparent', t !== tab);
         btn.classList.toggle('text-gray-500', t !== tab);
       });
@@ -103,10 +128,10 @@
     }
 
     function statsCard(label, value, sub='', accent=false) {
-      return `<div class="${accent?'bg-coffee-800 text-white':'bg-white'} rounded-2xl p-4 shadow-sm">
-        <div class="text-xs ${accent?'text-coffee-300':'text-gray-500'} mb-1">${label}</div>
+      return `<div class="${accent ? 'bg-brand text-white' : 'bg-white border border-gray-100'} rounded-2xl p-4 shadow-sm">
+        <div class="text-xs ${accent ? 'text-orange-100' : 'text-gray-500'} mb-1">${label}</div>
         <div class="text-2xl font-bold">${value}</div>
-        ${sub ? `<div class="text-xs mt-0.5 ${accent?'text-coffee-300':'text-gray-400'}">${sub}</div>` : ''}
+        ${sub ? `<div class="text-xs mt-0.5 ${accent ? 'text-orange-100' : 'text-gray-400'}">${sub}</div>` : ''}
       </div>`;
     }
 
@@ -116,10 +141,10 @@
       const d = await res.json();
       document.getElementById('weekly-period').textContent = d.period;
       const dailyRows = d.daily_breakdown.map(day => `
-        <div class="flex items-center justify-between text-sm py-2 border-b border-coffee-50 last:border-0">
+        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
           <span class="text-gray-500 w-16">週${day.day} ${day.date}</span>
           <span class="text-gray-400 text-xs w-10 text-center">${day.order_count}筆</span>
-          <span class="font-medium text-coffee-800">$${day.revenue.toFixed(0)}</span>
+          <span class="font-medium text-gray-800">$${day.revenue.toFixed(0)}</span>
         </div>
       `).join('');
       document.getElementById('weekly-content').innerHTML = `
@@ -129,8 +154,8 @@
           ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
         </div>
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-          <div class="text-sm font-semibold text-coffee-800 mb-1">每日明細</div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div class="text-sm font-semibold text-gray-800 mb-1">每日明細</div>
           ${dailyRows}
         </div>
       `;
@@ -151,10 +176,10 @@
       const d = await res.json();
       document.getElementById('monthly-period').textContent = d.period;
       const weeklyRows = d.weekly_breakdown.map(w => `
-        <div class="flex items-center justify-between text-sm py-2 border-b border-coffee-50 last:border-0">
+        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
           <span class="text-gray-500">${w.label}</span>
           <span class="text-gray-400 text-xs w-10 text-center">${w.order_count}筆</span>
-          <span class="font-medium text-coffee-800">$${w.revenue.toFixed(0)}</span>
+          <span class="font-medium text-gray-800">$${w.revenue.toFixed(0)}</span>
         </div>
       `).join('');
       document.getElementById('monthly-content').innerHTML = `
@@ -164,8 +189,8 @@
           ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
         </div>
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-          <div class="text-sm font-semibold text-coffee-800 mb-1">每週明細</div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div class="text-sm font-semibold text-gray-800 mb-1">每週明細</div>
           ${weeklyRows}
         </div>
       `;
@@ -184,38 +209,166 @@
       const end = document.getElementById('q-end').value;
       if (!start || !end) return;
       const res = await fetch(`/api/reports/quarterly?start_ym=${start}&end_ym=${end}`);
-      const d = await res.json();
-      const breakdown = d.monthly_breakdown.map(m => `
-        <div class="flex items-center justify-between text-sm py-2 border-b border-coffee-50 last:border-0">
+      lastQuarterlyData = await res.json();
+      renderQuarterly(lastQuarterlyData);
+    }
+
+    function renderQuarterly(d) {
+      const useCost = splitMode === 'cost';
+      const bossAmt = useCost ? d.boss_payout : d.revenue * 0.3;
+      const selfAmt = useCost ? d.self_payout : d.revenue * 0.7;
+      const bossLabel = useCost ? '淨利×30%' : '營業額×30%';
+      const selfLabel = useCost ? '淨利×70%' : '營業額×70%';
+
+      const breakdown = d.monthly_breakdown.map(m => {
+        const mBoss = useCost ? m.net_profit * 0.3 : m.revenue * 0.3;
+        return `
+        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
           <span class="text-gray-600">${m.month}</span>
-          <span class="text-coffee-800 font-medium">$${m.revenue.toFixed(0)}</span>
-          <span class="text-gray-400 text-xs">淨利 $${m.net_profit.toFixed(0)}</span>
-        </div>
-      `).join('');
+          <span class="text-gray-800 font-medium">$${m.revenue.toFixed(0)}</span>
+          <span class="text-gray-400 text-xs">${useCost ? '淨利' : '分成'} $${(useCost ? m.net_profit : m.revenue * 0.7).toFixed(0)}</span>
+        </div>`;
+      }).join('');
+
       document.getElementById('quarterly-content').innerHTML = `
-        <div class="text-sm font-medium text-coffee-700 mb-3">${d.period}</div>
+        <div class="text-sm font-medium text-gray-600 mb-3">${d.period}</div>
         <div class="grid grid-cols-2 gap-3 mb-4">
           ${statsCard('總營業額', '$'+d.revenue.toFixed(0))}
           ${statsCard('總訂單數', d.order_count+'筆')}
-          ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
-          ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
+          ${useCost ? statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0)) : statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
+          ${useCost ? statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true) : statsCard('分成基礎', '$'+d.revenue.toFixed(0), '直接用營業額', true)}
         </div>
         <div class="grid grid-cols-2 gap-3 mb-4">
-          ${statsCard('應匯老闆 (30%)', '$'+d.boss_payout.toFixed(0), '淨利×30%')}
-          ${statsCard('自留 (70%)', '$'+d.self_payout.toFixed(0), '淨利×70%')}
+          ${statsCard('應匯老闆 (30%)', '$'+bossAmt.toFixed(0), bossLabel)}
+          ${statsCard('自留 (70%)', '$'+selfAmt.toFixed(0), selfLabel)}
           ${statsCard('總銷售克數', d.total_grams.toFixed(1)+'g')}
           ${statsCard('換算磅數', d.total_pounds.toFixed(3)+' lb')}
         </div>
         ${d.monthly_breakdown.length > 1 ? `
-        <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
-          <div class="text-sm font-semibold text-coffee-800 mb-2">每月營收拆解</div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4">
+          <div class="text-sm font-semibold text-gray-800 mb-2">每月營收拆解</div>
           ${breakdown}
         </div>` : ''}
       `;
     }
 
-    function syncSheets() {
-      alert('Google Sheets 串接尚未設定，功能即將推出。');
+    function exportPDF() {
+      if (!lastQuarterlyData) return;
+      const d = lastQuarterlyData;
+      const useCost = splitMode === 'cost';
+      const bossAmt = useCost ? d.boss_payout : d.revenue * 0.3;
+      const selfAmt = useCost ? d.self_payout : d.revenue * 0.7;
+      const modeLabel = useCost ? '扣除成本模式' : '直接分成模式';
+      const profitLabel = useCost ? '淨利' : '分成基礎（營業額）';
+      const profitAmt = useCost ? d.net_profit : d.revenue;
+      const bossNote = useCost ? '淨利 × 30%' : '營業額 × 30%';
+      const selfNote = useCost ? '淨利 × 70%' : '營業額 × 70%';
+
+      const breakdownRows = d.monthly_breakdown.map(m => {
+        const mProfit = useCost ? m.net_profit : m.revenue * 0.7;
+        const mLabel = useCost ? '淨利' : '自留';
+        return `<tr>
+          <td>${m.month}</td>
+          <td>$${m.revenue.toFixed(0)}</td>
+          <td>$${m.purchase_cost !== undefined ? m.purchase_cost.toFixed(0) : '—'}</td>
+          <td>${mLabel} $${mProfit.toFixed(0)}</td>
+        </tr>`;
+      }).join('');
+
+      const printDate = new Date().toLocaleDateString('zh-TW', { timeZone: TZ, year:'numeric', month:'long', day:'numeric' });
+
+      const html = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>季報 ${d.period}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; color: #111; padding: 40px; font-size: 14px; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .meta { color: #666; font-size: 12px; margin-bottom: 32px; }
+    .mode-tag { display: inline-block; background: #D85A30; color: white; font-size: 11px; padding: 2px 10px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+    .card.accent { background: #D85A30; color: white; border-color: #D85A30; }
+    .card .label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
+    .card.accent .label { color: rgba(255,255,255,0.7); }
+    .card .value { font-size: 24px; font-weight: 700; }
+    .card .note { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .card.accent .note { color: rgba(255,255,255,0.7); }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { text-align: left; padding: 8px 12px; font-size: 12px; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
+    td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+    .section-title { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { margin-top: 32px; font-size: 11px; color: #9ca3af; text-align: right; }
+    @media print {
+      body { padding: 24px; }
+      @page { margin: 1.5cm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <h1>季報 <span style="font-weight:400; color:#6b7280">${d.period}</span><span class="mode-tag">${modeLabel}</span></h1>
+  <div class="meta">匯出日期：${printDate}</div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">總營業額</div>
+      <div class="value">$${d.revenue.toFixed(0)}</div>
+    </div>
+    <div class="card">
+      <div class="label">總訂單數</div>
+      <div class="value">${d.order_count} 筆</div>
+    </div>
+    <div class="card">
+      <div class="label">進貨成本</div>
+      <div class="value">$${d.purchase_cost.toFixed(0)}</div>
+    </div>
+    <div class="card accent">
+      <div class="label">${profitLabel}</div>
+      <div class="value">$${profitAmt.toFixed(0)}</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">應匯老闆 (30%)</div>
+      <div class="value">$${bossAmt.toFixed(0)}</div>
+      <div class="note">${bossNote}</div>
+    </div>
+    <div class="card">
+      <div class="label">自留 (70%)</div>
+      <div class="value">$${selfAmt.toFixed(0)}</div>
+      <div class="note">${selfNote}</div>
+    </div>
+    <div class="card">
+      <div class="label">總銷售克數</div>
+      <div class="value">${d.total_grams.toFixed(1)} g</div>
+    </div>
+    <div class="card">
+      <div class="label">換算磅數</div>
+      <div class="value">${d.total_pounds.toFixed(3)} lb</div>
+    </div>
+  </div>
+
+  ${d.monthly_breakdown.length > 1 ? `
+  <hr class="divider">
+  <div class="section-title">每月營收拆解</div>
+  <table>
+    <thead><tr><th>月份</th><th>營業額</th><th>進貨成本</th><th>${useCost ? '淨利' : '自留 (70%)'}</th></tr></thead>
+    <tbody>${breakdownRows}</tbody>
+  </table>` : ''}
+
+  <div class="footer">由訂單系統自動產生</div>
+
+  <script>window.onload = () => window.print();<\/script>
+</body>
+</html>`;
+
+      const win = window.open('', '_blank');
+      win.document.write(html);
+      win.document.close();
     }
 
     loadWeekly();
