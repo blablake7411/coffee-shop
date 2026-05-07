@@ -53,6 +53,7 @@ def _daily_breakdown(db: Session, start: date, end: date) -> list:
             "day": day_names[d.weekday()],
             "revenue": _revenue_in_range(db, d, d),
             "order_count": _order_count_in_range(db, d, d),
+            "grams": _grams_in_range(db, d, d),
         })
         d += timedelta(days=1)
     return result
@@ -69,6 +70,7 @@ def _weekly_breakdown(db: Session, start: date, end: date) -> list:
             "label": f"{eff_start.month}/{eff_start.day}－{eff_end.month}/{eff_end.day}",
             "revenue": _revenue_in_range(db, eff_start, eff_end),
             "order_count": _order_count_in_range(db, eff_start, eff_end),
+            "grams": _grams_in_range(db, eff_start, eff_end),
         })
         week_start += timedelta(days=7)
     return result
@@ -87,6 +89,20 @@ def _purchase_cost_in_range(db: Session, start: date, end: date) -> float:
 
 def _order_count_in_range(db: Session, start: date, end: date) -> int:
     return db.query(Order).filter(Order.order_date >= start, Order.order_date <= end).count()
+
+
+def _grams_in_range(db: Session, start: date, end: date) -> float:
+    result = (
+        db.query(func.sum(OrderItem.gram_size * OrderItem.quantity))
+        .join(Order)
+        .filter(
+            Order.order_date >= start,
+            Order.order_date <= end,
+            Order.status != "退款",
+        )
+        .scalar()
+    )
+    return result or 0.0
 
 
 @router.get("/weekly")

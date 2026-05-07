@@ -145,6 +145,7 @@
           <span class="text-gray-500 w-16">週${day.day} ${day.date}</span>
           <span class="text-gray-400 text-xs w-10 text-center">${day.order_count}筆</span>
           <span class="font-medium text-gray-800">$${day.revenue.toFixed(0)}</span>
+          <span class="text-gray-400 text-xs w-12 text-right">${day.grams > 0 ? day.grams.toFixed(0) : '—'}</span>
         </div>
       `).join('');
       document.getElementById('weekly-content').innerHTML = `
@@ -180,6 +181,7 @@
           <span class="text-gray-500">${w.label}</span>
           <span class="text-gray-400 text-xs w-10 text-center">${w.order_count}筆</span>
           <span class="font-medium text-gray-800">$${w.revenue.toFixed(0)}</span>
+          <span class="text-gray-400 text-xs w-12 text-right">${w.grams > 0 ? w.grams.toFixed(0) : '—'}</span>
         </div>
       `).join('');
       document.getElementById('monthly-content').innerHTML = `

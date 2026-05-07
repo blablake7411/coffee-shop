@@ -21,7 +21,10 @@
     <h1 class="text-xl font-bold text-gray-900">今日訂單</h1>
     <div class="text-right">
       <div class="text-xs text-gray-400" id="today-date"></div>
-      <div class="text-lg font-semibold text-brand" id="today-total">$0</div>
+      <div class="text-lg font-semibold text-brand">
+        <span id="today-total">$0</span>
+        <span class="text-sm font-normal text-gray-400 ml-1" id="today-grams"></span>
+      </div>
     </div>
   </header>
 
@@ -110,8 +113,13 @@
       const active = orders.filter(o => ['待確認','處理中','已出貨'].includes(o.status));
       const done = orders.filter(o => ['完成','退款'].includes(o.status));
 
-      let total = 0;
-      orders.forEach(o => { if (o.status !== '退款') total += o.final_amount; });
+      let total = 0, totalGrams = 0;
+      orders.forEach(o => {
+        if (o.status !== '退款') {
+          total += o.final_amount;
+          o.items.forEach(i => { totalGrams += i.gram_size * i.quantity; });
+        }
+      });
 
       let html = '';
       if (active.length) {
@@ -124,6 +132,7 @@
       }
       list.innerHTML = html;
       document.getElementById('today-total').textContent = '$' + total.toFixed(0);
+      document.getElementById('today-grams').textContent = totalGrams > 0 ? totalGrams.toFixed(0) : '';
     }
 
     function openModal(id, customerName, summary) {

@@ -297,6 +297,10 @@
         const dayOfWeek = (firstDay + d - 1) % 7;
         const textColor = dayOfWeek === 6 ? 'text-red-500' : dayOfWeek === 5 ? 'text-blue-500' : 'text-gray-700';
         const totalAmt = orders.reduce((s, o) => s + o.final_amount, 0);
+        const totalGrams = orders.reduce((s, o) => {
+          if (o.status === '退款') return s;
+          return s + o.items.reduce((ss, i) => ss + i.gram_size * i.quantity, 0);
+        }, 0);
 
         cells += `
           <div onclick="selectDay('${dateStr}')"
@@ -309,6 +313,9 @@
               </span>
               <span class="text-xs leading-none ${isSelected ? 'text-orange-100' : 'text-gray-400'}">
                 $${totalAmt.toFixed(0)}
+              </span>
+              <span class="text-xs leading-none ${isSelected ? 'text-orange-200' : 'text-gray-300'}">
+                ${totalGrams.toFixed(0)}
               </span>
             ` : '<span class="h-4"></span>'}
           </div>`;
