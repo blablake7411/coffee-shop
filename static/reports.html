@@ -229,6 +229,7 @@
           <span class="text-gray-600">${m.month}</span>
           <span class="text-gray-800 font-medium">$${m.revenue.toFixed(0)}</span>
           <span class="text-gray-400 text-xs">${useCost ? '淨利' : '分成'} $${(useCost ? m.net_profit : m.revenue * 0.7).toFixed(0)}</span>
+          <span class="text-gray-400 text-xs w-12 text-right">${m.grams > 0 ? m.grams.toFixed(0) : '—'}</span>
         </div>`;
       }).join('');
 

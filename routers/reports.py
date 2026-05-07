@@ -190,6 +190,7 @@ def quarterly_report(
             "revenue": rev,
             "purchase_cost": cost,
             "net_profit": rev - cost,
+            "grams": _grams_in_range(db, ms, me),
         })
 
     total_revenue = sum(r["revenue"] for r in monthly_breakdown)
