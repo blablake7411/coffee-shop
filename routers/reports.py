@@ -5,6 +5,7 @@ from database import get_db
 from models import Order, OrderItem, PurchaseRecord, Product
 from datetime import datetime, timezone, timedelta, date
 import calendar
+import os
 from typing import Optional
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -229,3 +230,72 @@ def quarterly_report(
         "total_pounds": round(total_grams / 453.592, 3),
         "monthly_breakdown": monthly_breakdown,
     }
+
+
+def _get_sheets_service():
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
+    from googleapiclient.discovery import build
+
+    creds = Credentials(
+        token=None,
+        refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.environ["GOOGLE_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+        scopes=["https://www.googleapis.com/auth/spreadsheets"],
+    )
+    creds.refresh(Request())
+    return build("sheets", "v4", credentials=creds)
+
+
+@router.post("/export-sheets")
+def export_to_sheets(
+    start_ym: str,
+    end_ym: str,
+    split_mode: str = "cost",
+    db: Session = Depends(get_db),
+):
+    data = quarterly_report(start_ym=start_ym, end_ym=end_ym, db=db)
+    use_cost = split_mode == "cost"
+    boss_amt = data["boss_payout"] if use_cost else data["revenue"] * 0.3
+    self_amt = data["self_payout"] if use_cost else data["revenue"] * 0.7
+
+    sheet_name = f"{start_ym}~{end_ym}"
+    ss_id = os.environ["SHEETS_SPREADSHEET_ID"]
+    service = _get_sheets_service()
+    sheets = service.spreadsheets()
+
+    existing = sheets.get(spreadsheetId=ss_id).execute()
+    existing_titles = [s["properties"]["title"] for s in existing["sheets"]]
+    if sheet_name not in existing_titles:
+        sheets.batchUpdate(spreadsheetId=ss_id, body={
+            "requests": [{"addSheet": {"properties": {"title": sheet_name}}}]
+        }).execute()
+
+    rows = [
+        ["季報", data["period"]],
+        [],
+        ["項目", "金額"],
+        ["總營業額", data["revenue"]],
+        ["總訂單數", data["order_count"]],
+        ["進貨成本", data["purchase_cost"]],
+        ["淨利", data["net_profit"]],
+        ["應匯老闆 (30%)", boss_amt],
+        ["自留 (70%)", self_amt],
+        ["總銷售克數", data["total_grams"]],
+        ["換算磅數", data["total_pounds"]],
+        [],
+        ["月份", "營業額", "進貨成本", "淨利", "銷售克數"],
+    ]
+    for m in data["monthly_breakdown"]:
+        rows.append([m["month"], m["revenue"], m["purchase_cost"], m["net_profit"], m["grams"]])
+
+    sheets.values().update(
+        spreadsheetId=ss_id,
+        range=f"{sheet_name}!A1",
+        valueInputOption="RAW",
+        body={"values": rows},
+    ).execute()
+
+    return {"url": f"https://docs.google.com/spreadsheets/d/{ss_id}"}

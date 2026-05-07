@@ -79,10 +79,16 @@
         </button>
       </div>
       <div id="quarterly-content"></div>
-      <button onclick="exportPDF()" class="w-full mt-5 flex items-center justify-center gap-2 bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition">
-        <i class="ti ti-file-type-pdf text-lg"></i>
-        <span>匯出 PDF</span>
-      </button>
+      <div class="flex gap-3 mt-5">
+        <button onclick="exportPDF()" class="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition">
+          <i class="ti ti-file-type-pdf text-lg"></i>
+          <span>PDF</span>
+        </button>
+        <button onclick="exportSheets()" id="btn-sheets" class="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition">
+          <i class="ti ti-table text-lg"></i>
+          <span>Google Sheets</span>
+        </button>
+      </div>
     </div>
   </main>
 
@@ -372,6 +378,24 @@
       const win = window.open('', '_blank');
       win.document.write(html);
       win.document.close();
+    }
+
+    async function exportSheets() {
+      if (!lastQuarterlyData) return;
+      const start = document.getElementById('q-start').value;
+      const end = document.getElementById('q-end').value;
+      const btn = document.getElementById('btn-sheets');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2 animate-spin text-lg"></i><span>上傳中...</span>';
+      try {
+        const params = new URLSearchParams({ start_ym: start, end_ym: end, split_mode: splitMode });
+        const res = await fetch('/api/reports/export-sheets?' + params, { method: 'POST' });
+        const data = await res.json();
+        window.open(data.url, '_blank');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-table text-lg"></i><span>Google Sheets</span>';
+      }
     }
 
     loadWeekly();
