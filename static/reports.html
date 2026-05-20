@@ -27,6 +27,7 @@
       <button onclick="switchTab('weekly')" id="tab-weekly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-brand text-brand">週報</button>
       <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">月報</button>
       <button onclick="switchTab('quarterly')" id="tab-quarterly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">季報</button>
+      <button onclick="switchTab('custom')" id="tab-custom" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">自訂</button>
     </div>
   </div>
 
@@ -57,14 +58,18 @@
       <div class="flex items-center gap-3 mb-3">
         <div class="flex-1">
           <div class="text-xs text-gray-500 mb-1">從</div>
-          <input type="month" id="q-start" onchange="loadQuarterly()"
-            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
+          <div class="flex gap-1">
+            <select id="q-start-year" onchange="loadQuarterly()" class="flex-1 border border-gray-200 rounded-xl px-2 py-2 text-sm bg-white"></select>
+            <select id="q-start-month" onchange="loadQuarterly()" class="flex-1 border border-gray-200 rounded-xl px-2 py-2 text-sm bg-white"></select>
+          </div>
         </div>
         <div class="text-gray-400 text-lg mt-4">—</div>
         <div class="flex-1">
           <div class="text-xs text-gray-500 mb-1">到</div>
-          <input type="month" id="q-end" onchange="loadQuarterly()"
-            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
+          <div class="flex gap-1">
+            <select id="q-end-year" onchange="loadQuarterly()" class="flex-1 border border-gray-200 rounded-xl px-2 py-2 text-sm bg-white"></select>
+            <select id="q-end-month" onchange="loadQuarterly()" class="flex-1 border border-gray-200 rounded-xl px-2 py-2 text-sm bg-white"></select>
+          </div>
         </div>
       </div>
       <!-- 淨利計算模式切換 -->
@@ -90,6 +95,24 @@
         </button>
       </div>
     </div>
+    <!-- 自訂 -->
+    <div id="panel-custom" class="hidden">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex-1">
+          <div class="text-xs text-gray-500 mb-1">從</div>
+          <input type="date" id="c-start" onchange="loadCustom()"
+            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
+        </div>
+        <div class="text-gray-400 text-lg mt-4">—</div>
+        <div class="flex-1">
+          <div class="text-xs text-gray-500 mb-1">到</div>
+          <input type="date" id="c-end" onchange="loadCustom()"
+            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
+        </div>
+      </div>
+      <div id="custom-content"></div>
+    </div>
+
   </main>
 
   <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-1.5 z-40">
@@ -120,7 +143,7 @@
 
     function switchTab(tab) {
       currentTab = tab;
-      ['weekly','monthly','quarterly'].forEach(t => {
+      ['weekly','monthly','quarterly','custom'].forEach(t => {
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
         const btn = document.getElementById(`tab-${t}`);
         btn.classList.toggle('border-brand', t === tab);
@@ -130,7 +153,8 @@
       });
       if (tab==='weekly') loadWeekly();
       else if (tab==='monthly') loadMonthly();
-      else { initQuarterly(); loadQuarterly(); }
+      else if (tab==='quarterly') { initQuarterly(); loadQuarterly(); }
+      else { initCustom(); loadCustom(); }
     }
 
     function statsCard(label, value, sub='', accent=false) {
@@ -206,16 +230,37 @@
 
     function initQuarterly() {
       const [y, m] = todayInTZ.split('-');
-      if (!document.getElementById('q-start').value) {
-        document.getElementById('q-start').value = `${y}-01`;
-        document.getElementById('q-end').value = `${y}-${m}`;
+      const years = [parseInt(y)-1, parseInt(y)];
+      const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+      ['q-start-year','q-end-year'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel.options.length === 0) {
+          years.forEach(yr => { const o = new Option(yr, yr); sel.add(o); });
+        }
+      });
+      ['q-start-month','q-end-month'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel.options.length === 0) {
+          months.forEach((label, i) => { const o = new Option(label, String(i+1).padStart(2,'0')); sel.add(o); });
+        }
+      });
+      if (!document.getElementById('q-start-year').dataset.init) {
+        document.getElementById('q-start-year').value = y;
+        document.getElementById('q-start-month').value = '01';
+        document.getElementById('q-end-year').value = y;
+        document.getElementById('q-end-month').value = m;
+        document.getElementById('q-start-year').dataset.init = '1';
       }
     }
 
     async function loadQuarterly() {
-      const start = document.getElementById('q-start').value;
-      const end = document.getElementById('q-end').value;
-      if (!start || !end) return;
+      const sy = document.getElementById('q-start-year').value;
+      const sm = document.getElementById('q-start-month').value;
+      const ey = document.getElementById('q-end-year').value;
+      const em = document.getElementById('q-end-month').value;
+      if (!sy || !sm || !ey || !em) return;
+      const start = `${sy}-${sm}`;
+      const end = `${ey}-${em}`;
       const res = await fetch(`/api/reports/quarterly?start_ym=${start}&end_ym=${end}`);
       lastQuarterlyData = await res.json();
       renderQuarterly(lastQuarterlyData);
@@ -382,8 +427,8 @@
 
     async function exportSheets() {
       if (!lastQuarterlyData) return;
-      const start = document.getElementById('q-start').value;
-      const end = document.getElementById('q-end').value;
+      const start = `${document.getElementById('q-start-year').value}-${document.getElementById('q-start-month').value}`;
+      const end = `${document.getElementById('q-end-year').value}-${document.getElementById('q-end-month').value}`;
       const btn = document.getElementById('btn-sheets');
       btn.disabled = true;
       btn.innerHTML = '<i class="ti ti-loader-2 animate-spin text-lg"></i><span>上傳中...</span>';
@@ -396,6 +441,49 @@
         btn.disabled = false;
         btn.innerHTML = '<i class="ti ti-table text-lg"></i><span>Google Sheets</span>';
       }
+    }
+
+    function initCustom() {
+      if (!document.getElementById('c-start').value) {
+        const [y, m] = todayInTZ.split('-');
+        document.getElementById('c-start').value = `${y}-${m}-01`;
+        document.getElementById('c-end').value = todayInTZ;
+      }
+    }
+
+    async function loadCustom() {
+      const start = document.getElementById('c-start').value;
+      const end = document.getElementById('c-end').value;
+      if (!start || !end) return;
+      const res = await fetch(`/api/reports/custom?start_date=${start}&end_date=${end}`);
+      const d = await res.json();
+      if (d.error) return;
+      const dailyRows = d.daily_breakdown.map(day => `
+        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
+          <span class="text-gray-500 w-16">週${day.day} ${day.date}</span>
+          <span class="text-gray-400 text-xs w-10 text-center">${day.order_count}筆</span>
+          <span class="font-medium text-gray-800">$${day.revenue.toFixed(0)}</span>
+          <span class="text-gray-400 text-xs w-12 text-right">${day.grams > 0 ? day.grams.toFixed(0) : '—'}</span>
+        </div>
+      `).join('');
+      document.getElementById('custom-content').innerHTML = `
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          ${statsCard('總營業額', '$'+d.revenue.toFixed(0))}
+          ${statsCard('總訂單數', d.order_count+'筆')}
+          ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
+          ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          ${statsCard('應匯老闆 (30%)', '$'+d.boss_payout.toFixed(0), '淨利×30%')}
+          ${statsCard('自留 (70%)', '$'+d.self_payout.toFixed(0), '淨利×70%')}
+          ${statsCard('總銷售克數', d.total_grams.toFixed(1)+'g')}
+          ${statsCard('換算磅數', d.total_pounds.toFixed(3)+' lb')}
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div class="text-sm font-semibold text-gray-800 mb-1">每日明細</div>
+          ${dailyRows}
+        </div>
+      `;
     }
 
     loadWeekly();

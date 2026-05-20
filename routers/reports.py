@@ -232,6 +232,31 @@ def quarterly_report(
     }
 
 
+@router.get("/custom")
+def custom_report(start_date: str, end_date: str, db: Session = Depends(get_db)):
+    try:
+        start = date.fromisoformat(start_date)
+        end = date.fromisoformat(end_date)
+    except ValueError:
+        return {"error": "Invalid date format"}
+    revenue = _revenue_in_range(db, start, end)
+    cost = _purchase_cost_in_range(db, start, end)
+    net_profit = revenue - cost
+    total_grams = _grams_in_range(db, start, end)
+    return {
+        "period": f"{start.month}/{start.day} ~ {end.month}/{end.day}",
+        "revenue": revenue,
+        "order_count": _order_count_in_range(db, start, end),
+        "purchase_cost": cost,
+        "net_profit": net_profit,
+        "boss_payout": round(net_profit * BOSS_RATIO, 2),
+        "self_payout": round(net_profit * SELF_RATIO, 2),
+        "total_grams": total_grams,
+        "total_pounds": round(total_grams / 453.592, 3),
+        "daily_breakdown": _daily_breakdown(db, start, end),
+    }
+
+
 def _get_sheets_service():
     from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
