@@ -374,3 +374,68 @@ def export_to_sheets(
     ).execute()
 
     return {"url": f"https://docs.google.com/spreadsheets/d/{ss_id}"}
+
+
+@router.post("/export-sheets-custom")
+def export_custom_to_sheets(
+    start_date: str,
+    end_date: str,
+    breakdown: str = "daily",
+    db: Session = Depends(get_db),
+):
+    data = custom_report(start_date=start_date, end_date=end_date, db=db)
+
+    sheet_name = f"{start_date}~{end_date}"
+    ss_id = os.environ["SHEETS_SPREADSHEET_ID"]
+    service = _get_sheets_service()
+    sheets = service.spreadsheets()
+
+    existing = sheets.get(spreadsheetId=ss_id).execute()
+    existing_titles = [s["properties"]["title"] for s in existing["sheets"]]
+    if sheet_name not in existing_titles:
+        sheets.batchUpdate(spreadsheetId=ss_id, body={
+            "requests": [{"addSheet": {"properties": {"title": sheet_name}}}]
+        }).execute()
+
+    rows = [
+        ["自訂報表", data["period"]],
+        [],
+        ["項目", "金額"],
+        ["總營業額", data["revenue"]],
+        ["總訂單數", data["order_count"]],
+        ["進貨成本", data["purchase_cost"]],
+        ["淨利", data["net_profit"]],
+        ["應匯老闆 (30%)", data["boss_payout"]],
+        ["自留 (70%)", data["self_payout"]],
+        ["總銷售克數", data["total_grams"]],
+        ["換算磅數", data["total_pounds"]],
+        [],
+    ]
+
+    if breakdown == "weekly":
+        rows.append(["週次", "訂單數", "營業額", "銷售克數"])
+        for w in data["weekly_breakdown"]:
+            rows.append([w["label"], w["order_count"], w["revenue"], w["grams"]])
+    elif breakdown == "monthly":
+        rows.append(["月份", "訂單數", "營業額", "銷售克數"])
+        for m in data["monthly_breakdown"]:
+            rows.append([m["label"], m["order_count"], m["revenue"], m["grams"]])
+    else:
+        rows.append(["日期", "星期", "訂單數", "營業額", "銷售克數"])
+        for d in data["daily_breakdown"]:
+            rows.append([d["date"], f"週{d['day']}", d["order_count"], d["revenue"], d["grams"]])
+
+    if data["purchases"]:
+        rows.append([])
+        rows.append(["進貨日期", "品名", "克數", "成本"])
+        for p in data["purchases"]:
+            rows.append([p["date"], p["product"], p["grams"], p["total_cost"]])
+
+    sheets.values().update(
+        spreadsheetId=ss_id,
+        range=f"{sheet_name}!A1",
+        valueInputOption="RAW",
+        body={"values": rows},
+    ).execute()
+
+    return {"url": f"https://docs.google.com/spreadsheets/d/{ss_id}"}

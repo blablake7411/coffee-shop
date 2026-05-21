@@ -115,6 +115,16 @@
           class="flex-1 py-1.5 rounded-lg text-sm font-medium transition text-gray-500">每月</button>
       </div>
       <div id="custom-content"></div>
+      <div class="flex gap-3 mt-5" id="custom-export-btns" style="display:none!important">
+        <button onclick="exportCustomPDF()" class="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition">
+          <i class="ti ti-file-type-pdf text-lg"></i>
+          <span>PDF</span>
+        </button>
+        <button onclick="exportCustomSheets()" id="btn-custom-sheets" class="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition">
+          <i class="ti ti-table text-lg"></i>
+          <span>Google Sheets</span>
+        </button>
+      </div>
     </div>
 
   </main>
@@ -512,6 +522,108 @@
         </div>
         ${purchasesCard(d.purchases)}
       `;
+      document.getElementById('custom-export-btns').style.removeProperty('display');
+    }
+
+    function exportCustomPDF() {
+      if (!lastCustomData) return;
+      const d = lastCustomData;
+      const labelMap = { daily:'每日明細', weekly:'每週明細', monthly:'每月明細' };
+      const printDate = new Date().toLocaleDateString('zh-TW', { timeZone: TZ, year:'numeric', month:'long', day:'numeric' });
+
+      let breakdownRows = '';
+      let breakdownHeader = '';
+      if (customBreakdown === 'daily') {
+        breakdownHeader = '<tr><th>日期</th><th>星期</th><th>訂單數</th><th>營業額</th><th>克數</th></tr>';
+        breakdownRows = d.daily_breakdown.map(r => `<tr><td>${r.date}</td><td>週${r.day}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? r.grams.toFixed(0)+'g' : '—'}</td></tr>`).join('');
+      } else if (customBreakdown === 'weekly') {
+        breakdownHeader = '<tr><th>週次</th><th>訂單數</th><th>營業額</th><th>克數</th></tr>';
+        breakdownRows = d.weekly_breakdown.map(r => `<tr><td>${r.label}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? r.grams.toFixed(0)+'g' : '—'}</td></tr>`).join('');
+      } else {
+        breakdownHeader = '<tr><th>月份</th><th>訂單數</th><th>營業額</th><th>克數</th></tr>';
+        breakdownRows = d.monthly_breakdown.map(r => `<tr><td>${r.label}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? r.grams.toFixed(0)+'g' : '—'}</td></tr>`).join('');
+      }
+
+      const purchaseSection = d.purchases && d.purchases.length > 0 ? `
+        <hr class="divider">
+        <div class="section-title">進貨明細</div>
+        <table>
+          <thead><tr><th>日期</th><th>品名</th><th>克數</th><th>成本</th></tr></thead>
+          <tbody>${d.purchases.map(p => `<tr><td>${p.date}</td><td>${p.product}</td><td>${p.grams.toFixed(0)}g</td><td>$${p.total_cost.toFixed(0)}</td></tr>`).join('')}</tbody>
+        </table>` : '';
+
+      const html = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>自訂報表 ${d.period}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; color: #111; padding: 40px; font-size: 14px; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .meta { color: #666; font-size: 12px; margin-bottom: 32px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+    .card.accent { background: #D85A30; color: white; border-color: #D85A30; }
+    .card .label { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
+    .card.accent .label { color: rgba(255,255,255,0.7); }
+    .card .value { font-size: 24px; font-weight: 700; }
+    .card .note { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .card.accent .note { color: rgba(255,255,255,0.7); }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { text-align: left; padding: 8px 12px; font-size: 12px; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
+    td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+    .section-title { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { margin-top: 32px; font-size: 11px; color: #9ca3af; text-align: right; }
+    @media print { body { padding: 24px; } @page { margin: 1.5cm; size: A4; } }
+  </style>
+</head>
+<body>
+  <h1>自訂報表 <span style="font-weight:400; color:#6b7280">${d.period}</span></h1>
+  <div class="meta">匯出日期：${printDate}</div>
+  <div class="grid">
+    <div class="card"><div class="label">總營業額</div><div class="value">$${d.revenue.toFixed(0)}</div></div>
+    <div class="card"><div class="label">總訂單數</div><div class="value">${d.order_count} 筆</div></div>
+    <div class="card"><div class="label">進貨成本</div><div class="value">$${d.purchase_cost.toFixed(0)}</div></div>
+    <div class="card accent"><div class="label">淨利</div><div class="value">$${d.net_profit.toFixed(0)}</div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="label">應匯老闆 (30%)</div><div class="value">$${d.boss_payout.toFixed(0)}</div><div class="note">淨利 × 30%</div></div>
+    <div class="card"><div class="label">自留 (70%)</div><div class="value">$${d.self_payout.toFixed(0)}</div><div class="note">淨利 × 70%</div></div>
+    <div class="card"><div class="label">總銷售克數</div><div class="value">${d.total_grams.toFixed(1)} g</div></div>
+    <div class="card"><div class="label">換算磅數</div><div class="value">${d.total_pounds.toFixed(3)} lb</div></div>
+  </div>
+  <hr class="divider">
+  <div class="section-title">${labelMap[customBreakdown]}</div>
+  <table><thead>${breakdownHeader}</thead><tbody>${breakdownRows}</tbody></table>
+  ${purchaseSection}
+  <div class="footer">由訂單系統自動產生</div>
+  <script>window.onload = () => window.print();<\/script>
+</body>
+</html>`;
+
+      const win = window.open('', '_blank');
+      win.document.write(html);
+      win.document.close();
+    }
+
+    async function exportCustomSheets() {
+      if (!lastCustomData) return;
+      const start = document.getElementById('c-start').value;
+      const end = document.getElementById('c-end').value;
+      const btn = document.getElementById('btn-custom-sheets');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2 animate-spin text-lg"></i><span>上傳中...</span>';
+      try {
+        const params = new URLSearchParams({ start_date: start, end_date: end, breakdown: customBreakdown });
+        const res = await fetch('/api/reports/export-sheets-custom?' + params, { method: 'POST' });
+        const data = await res.json();
+        window.open(data.url, '_blank');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-table text-lg"></i><span>Google Sheets</span>';
+      }
     }
 
     function initCustom() {
