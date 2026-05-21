@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from database import get_db
 from models import Order, OrderItem, PurchaseRecord, Product
@@ -77,6 +77,47 @@ def _weekly_breakdown(db: Session, start: date, end: date) -> list:
     return result
 
 
+def _purchases_in_range(db: Session, start: date, end: date) -> list:
+    dt_start = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
+    dt_end = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=timezone.utc)
+    records = (
+        db.query(PurchaseRecord)
+        .options(joinedload(PurchaseRecord.product))
+        .filter(PurchaseRecord.purchased_at >= dt_start, PurchaseRecord.purchased_at <= dt_end)
+        .order_by(PurchaseRecord.purchased_at)
+        .all()
+    )
+    return [
+        {
+            "date": r.purchased_at.strftime("%-m/%-d"),
+            "product": r.product.name if r.product else "—",
+            "grams": r.quantity_grams,
+            "total_cost": r.total_cost,
+        }
+        for r in records
+    ]
+
+
+def _monthly_breakdown_in_range(db: Session, start: date, end: date) -> list:
+    result = []
+    y, m = start.year, start.month
+    while (y, m) <= (end.year, end.month):
+        ms, me = _month_range(y, m)
+        eff_start = max(ms, start)
+        eff_end = min(me, end)
+        result.append({
+            "label": f"{y}/{m:02d}",
+            "revenue": _revenue_in_range(db, eff_start, eff_end),
+            "order_count": _order_count_in_range(db, eff_start, eff_end),
+            "grams": _grams_in_range(db, eff_start, eff_end),
+        })
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
+    return result
+
+
 def _purchase_cost_in_range(db: Session, start: date, end: date) -> float:
     dt_start = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
     dt_end = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=timezone.utc)
@@ -127,6 +168,7 @@ def weekly_report(week_offset: int = 0, local_date: Optional[str] = None, db: Se
         "purchase_cost": cost,
         "net_profit": net_profit,
         "daily_breakdown": _daily_breakdown(db, start, end),
+        "purchases": _purchases_in_range(db, start, end),
     }
 
 
@@ -146,6 +188,7 @@ def monthly_report(year: Optional[int] = None, month: Optional[int] = None, db: 
         "purchase_cost": cost,
         "net_profit": net_profit,
         "weekly_breakdown": _weekly_breakdown(db, start, end),
+        "purchases": _purchases_in_range(db, start, end),
     }
 
 
@@ -192,6 +235,7 @@ def quarterly_report(
             "purchase_cost": cost,
             "net_profit": rev - cost,
             "grams": _grams_in_range(db, ms, me),
+            "purchases": _purchases_in_range(db, ms, me),
         })
 
     total_revenue = sum(r["revenue"] for r in monthly_breakdown)
@@ -218,6 +262,8 @@ def quarterly_report(
     else:
         period_str = f"{y0}/{m0:02d} ～ {yn}/{mn:02d}"
 
+    all_start, _ = _month_range(*month_pairs[0])
+    _, all_end = _month_range(*month_pairs[-1])
     return {
         "period": period_str,
         "revenue": total_revenue,
@@ -229,6 +275,7 @@ def quarterly_report(
         "total_grams": total_grams,
         "total_pounds": round(total_grams / 453.592, 3),
         "monthly_breakdown": monthly_breakdown,
+        "purchases": _purchases_in_range(db, all_start, all_end),
     }
 
 
@@ -254,6 +301,9 @@ def custom_report(start_date: str, end_date: str, db: Session = Depends(get_db))
         "total_grams": total_grams,
         "total_pounds": round(total_grams / 453.592, 3),
         "daily_breakdown": _daily_breakdown(db, start, end),
+        "weekly_breakdown": _weekly_breakdown(db, start, end),
+        "monthly_breakdown": _monthly_breakdown_in_range(db, start, end),
+        "purchases": _purchases_in_range(db, start, end),
     }
 
 

@@ -58,18 +58,14 @@
       <div class="flex items-center gap-3 mb-3">
         <div class="flex-1">
           <div class="text-xs text-gray-500 mb-1">從</div>
-          <div class="flex gap-1">
-            <select id="q-start-year" onchange="loadQuarterly()" class="flex-1 border border-gray-200 rounded-xl px-2 py-2 text-sm bg-white"></select>
-            <select id="q-start-month" onchange="loadQuarterly()" class="flex-1 border border-gray-200 rounded-xl px-2 py-2 text-sm bg-white"></select>
-          </div>
+          <input type="month" id="q-start" onchange="loadQuarterly()"
+            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
         </div>
         <div class="text-gray-400 text-lg mt-4">—</div>
         <div class="flex-1">
           <div class="text-xs text-gray-500 mb-1">到</div>
-          <div class="flex gap-1">
-            <select id="q-end-year" onchange="loadQuarterly()" class="flex-1 border border-gray-200 rounded-xl px-2 py-2 text-sm bg-white"></select>
-            <select id="q-end-month" onchange="loadQuarterly()" class="flex-1 border border-gray-200 rounded-xl px-2 py-2 text-sm bg-white"></select>
-          </div>
+          <input type="month" id="q-end" onchange="loadQuarterly()"
+            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
         </div>
       </div>
       <!-- 淨利計算模式切換 -->
@@ -97,7 +93,7 @@
     </div>
     <!-- 自訂 -->
     <div id="panel-custom" class="hidden">
-      <div class="flex items-center gap-3 mb-4">
+      <div class="flex items-center gap-3 mb-3">
         <div class="flex-1">
           <div class="text-xs text-gray-500 mb-1">從</div>
           <input type="date" id="c-start" onchange="loadCustom()"
@@ -109,6 +105,14 @@
           <input type="date" id="c-end" onchange="loadCustom()"
             class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
         </div>
+      </div>
+      <div class="flex bg-gray-100 rounded-xl p-1 mb-4">
+        <button id="cb-daily" onclick="setCustomBreakdown('daily')"
+          class="flex-1 py-1.5 rounded-lg text-sm font-medium transition bg-white text-gray-900 shadow-sm">每日</button>
+        <button id="cb-weekly" onclick="setCustomBreakdown('weekly')"
+          class="flex-1 py-1.5 rounded-lg text-sm font-medium transition text-gray-500">每週</button>
+        <button id="cb-monthly" onclick="setCustomBreakdown('monthly')"
+          class="flex-1 py-1.5 rounded-lg text-sm font-medium transition text-gray-500">每月</button>
       </div>
       <div id="custom-content"></div>
     </div>
@@ -130,6 +134,8 @@
     let weekOffset = 0;
     let splitMode = 'cost';
     let lastQuarterlyData = null;
+    let customBreakdown = 'daily';
+    let lastCustomData = null;
 
     function setSplitMode(mode) {
       splitMode = mode;
@@ -155,6 +161,24 @@
       else if (tab==='monthly') loadMonthly();
       else if (tab==='quarterly') { initQuarterly(); loadQuarterly(); }
       else { initCustom(); loadCustom(); }
+    }
+
+    function purchasesCard(purchases) {
+      if (!purchases || purchases.length === 0) return '';
+      const rows = purchases.map(p => `
+        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
+          <span class="text-gray-500 w-10">${p.date}</span>
+          <span class="text-gray-700 flex-1 px-2">${p.product}</span>
+          <span class="text-gray-400 text-xs w-14 text-right">${p.grams.toFixed(0)}g</span>
+          <span class="font-medium text-gray-800 w-14 text-right">$${p.total_cost.toFixed(0)}</span>
+        </div>
+      `).join('');
+      return `
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mt-3">
+          <div class="text-sm font-semibold text-gray-800 mb-1">進貨明細</div>
+          ${rows}
+        </div>
+      `;
     }
 
     function statsCard(label, value, sub='', accent=false) {
@@ -189,6 +213,7 @@
           <div class="text-sm font-semibold text-gray-800 mb-1">每日明細</div>
           ${dailyRows}
         </div>
+        ${purchasesCard(d.purchases)}
       `;
     }
 
@@ -225,42 +250,22 @@
           <div class="text-sm font-semibold text-gray-800 mb-1">每週明細</div>
           ${weeklyRows}
         </div>
+        ${purchasesCard(d.purchases)}
       `;
     }
 
     function initQuarterly() {
-      const [y, m] = todayInTZ.split('-');
-      const years = [parseInt(y)-1, parseInt(y)];
-      const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-      ['q-start-year','q-end-year'].forEach(id => {
-        const sel = document.getElementById(id);
-        if (sel.options.length === 0) {
-          years.forEach(yr => { const o = new Option(yr, yr); sel.add(o); });
-        }
-      });
-      ['q-start-month','q-end-month'].forEach(id => {
-        const sel = document.getElementById(id);
-        if (sel.options.length === 0) {
-          months.forEach((label, i) => { const o = new Option(label, String(i+1).padStart(2,'0')); sel.add(o); });
-        }
-      });
-      if (!document.getElementById('q-start-year').dataset.init) {
-        document.getElementById('q-start-year').value = y;
-        document.getElementById('q-start-month').value = '01';
-        document.getElementById('q-end-year').value = y;
-        document.getElementById('q-end-month').value = m;
-        document.getElementById('q-start-year').dataset.init = '1';
+      if (!document.getElementById('q-start').value) {
+        const [y, m] = todayInTZ.split('-');
+        document.getElementById('q-start').value = `${y}-01`;
+        document.getElementById('q-end').value = `${y}-${m}`;
       }
     }
 
     async function loadQuarterly() {
-      const sy = document.getElementById('q-start-year').value;
-      const sm = document.getElementById('q-start-month').value;
-      const ey = document.getElementById('q-end-year').value;
-      const em = document.getElementById('q-end-month').value;
-      if (!sy || !sm || !ey || !em) return;
-      const start = `${sy}-${sm}`;
-      const end = `${ey}-${em}`;
+      const start = document.getElementById('q-start').value;
+      const end = document.getElementById('q-end').value;
+      if (!start || !end) return;
       const res = await fetch(`/api/reports/quarterly?start_ym=${start}&end_ym=${end}`);
       lastQuarterlyData = await res.json();
       renderQuarterly(lastQuarterlyData);
@@ -274,13 +279,24 @@
       const selfLabel = useCost ? '淨利×70%' : '營業額×70%';
 
       const breakdown = d.monthly_breakdown.map(m => {
-        const mBoss = useCost ? m.net_profit * 0.3 : m.revenue * 0.3;
+        const purchaseRows = m.purchases && m.purchases.length > 0
+          ? m.purchases.map(p => `
+            <div class="flex items-center justify-between text-xs py-1 pl-2 border-b border-gray-50 last:border-0 text-gray-400">
+              <span class="w-10">${p.date}</span>
+              <span class="flex-1 px-2">${p.product}</span>
+              <span class="w-12 text-right">${p.grams.toFixed(0)}g</span>
+              <span class="w-14 text-right text-gray-600">$${p.total_cost.toFixed(0)}</span>
+            </div>`).join('')
+          : '';
         return `
-        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
-          <span class="text-gray-600">${m.month}</span>
-          <span class="text-gray-800 font-medium">$${m.revenue.toFixed(0)}</span>
-          <span class="text-gray-400 text-xs">${useCost ? '淨利' : '分成'} $${(useCost ? m.net_profit : m.revenue * 0.7).toFixed(0)}</span>
-          <span class="text-gray-400 text-xs w-12 text-right">${m.grams > 0 ? m.grams.toFixed(0) : '—'}</span>
+        <div class="py-2 border-b border-gray-50 last:border-0">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600">${m.month}</span>
+            <span class="text-gray-800 font-medium">$${m.revenue.toFixed(0)}</span>
+            <span class="text-gray-400 text-xs">${useCost ? '淨利' : '分成'} $${(useCost ? m.net_profit : m.revenue * 0.7).toFixed(0)}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${m.grams > 0 ? m.grams.toFixed(0) : '—'}</span>
+          </div>
+          ${purchaseRows ? `<div class="mt-1 ml-2 bg-gray-50 rounded-lg px-2 py-0.5">${purchaseRows}</div>` : ''}
         </div>`;
       }).join('');
 
@@ -427,8 +443,8 @@
 
     async function exportSheets() {
       if (!lastQuarterlyData) return;
-      const start = `${document.getElementById('q-start-year').value}-${document.getElementById('q-start-month').value}`;
-      const end = `${document.getElementById('q-end-year').value}-${document.getElementById('q-end-month').value}`;
+      const start = document.getElementById('q-start').value;
+      const end = document.getElementById('q-end').value;
       const btn = document.getElementById('btn-sheets');
       btn.disabled = true;
       btn.innerHTML = '<i class="ti ti-loader-2 animate-spin text-lg"></i><span>上傳中...</span>';
@@ -441,6 +457,61 @@
         btn.disabled = false;
         btn.innerHTML = '<i class="ti ti-table text-lg"></i><span>Google Sheets</span>';
       }
+    }
+
+    function setCustomBreakdown(mode) {
+      customBreakdown = mode;
+      ['daily','weekly','monthly'].forEach(m => {
+        document.getElementById(`cb-${m}`).className =
+          `flex-1 py-1.5 rounded-lg text-sm font-medium transition ${m === mode ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`;
+      });
+      if (lastCustomData) renderCustom(lastCustomData);
+    }
+
+    function renderCustom(d) {
+      const labelMap = { daily:'每日明細', weekly:'每週明細', monthly:'每月明細' };
+      const rows = {
+        daily: d.daily_breakdown.map(r => `
+          <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
+            <span class="text-gray-500 w-16">週${r.day} ${r.date}</span>
+            <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
+            <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+          </div>`).join(''),
+        weekly: d.weekly_breakdown.map(r => `
+          <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
+            <span class="text-gray-500">${r.label}</span>
+            <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
+            <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+          </div>`).join(''),
+        monthly: d.monthly_breakdown.map(r => `
+          <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
+            <span class="text-gray-500">${r.label}</span>
+            <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
+            <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+          </div>`).join(''),
+      };
+      document.getElementById('custom-content').innerHTML = `
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          ${statsCard('總營業額', '$'+d.revenue.toFixed(0))}
+          ${statsCard('總訂單數', d.order_count+'筆')}
+          ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
+          ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          ${statsCard('應匯老闆 (30%)', '$'+d.boss_payout.toFixed(0), '淨利×30%')}
+          ${statsCard('自留 (70%)', '$'+d.self_payout.toFixed(0), '淨利×70%')}
+          ${statsCard('總銷售克數', d.total_grams.toFixed(1)+'g')}
+          ${statsCard('換算磅數', d.total_pounds.toFixed(3)+' lb')}
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div class="text-sm font-semibold text-gray-800 mb-1">${labelMap[customBreakdown]}</div>
+          ${rows[customBreakdown]}
+        </div>
+        ${purchasesCard(d.purchases)}
+      `;
     }
 
     function initCustom() {
@@ -456,34 +527,9 @@
       const end = document.getElementById('c-end').value;
       if (!start || !end) return;
       const res = await fetch(`/api/reports/custom?start_date=${start}&end_date=${end}`);
-      const d = await res.json();
-      if (d.error) return;
-      const dailyRows = d.daily_breakdown.map(day => `
-        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
-          <span class="text-gray-500 w-16">週${day.day} ${day.date}</span>
-          <span class="text-gray-400 text-xs w-10 text-center">${day.order_count}筆</span>
-          <span class="font-medium text-gray-800">$${day.revenue.toFixed(0)}</span>
-          <span class="text-gray-400 text-xs w-12 text-right">${day.grams > 0 ? day.grams.toFixed(0) : '—'}</span>
-        </div>
-      `).join('');
-      document.getElementById('custom-content').innerHTML = `
-        <div class="grid grid-cols-2 gap-3 mb-4">
-          ${statsCard('總營業額', '$'+d.revenue.toFixed(0))}
-          ${statsCard('總訂單數', d.order_count+'筆')}
-          ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
-          ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
-        </div>
-        <div class="grid grid-cols-2 gap-3 mb-4">
-          ${statsCard('應匯老闆 (30%)', '$'+d.boss_payout.toFixed(0), '淨利×30%')}
-          ${statsCard('自留 (70%)', '$'+d.self_payout.toFixed(0), '淨利×70%')}
-          ${statsCard('總銷售克數', d.total_grams.toFixed(1)+'g')}
-          ${statsCard('換算磅數', d.total_pounds.toFixed(3)+' lb')}
-        </div>
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <div class="text-sm font-semibold text-gray-800 mb-1">每日明細</div>
-          ${dailyRows}
-        </div>
-      `;
+      lastCustomData = await res.json();
+      if (lastCustomData.error) return;
+      renderCustom(lastCustomData);
     }
 
     loadWeekly();
