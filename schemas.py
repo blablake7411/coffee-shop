@@ -66,6 +66,7 @@ class CustomerOut(BaseModel):
     phone: Optional[str]
     notes: Optional[str]
     created_at: datetime
+    total_spent: Optional[float] = None
 
     class Config:
         from_attributes = True

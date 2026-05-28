@@ -190,7 +190,10 @@
               <div class="font-semibold text-gray-900">${c.name}</div>
               ${c.messenger_name ? `<div class="text-xs text-gray-400">${c.messenger_name}</div>` : ''}
             </div>
-            <span class="text-gray-300 text-xl">›</span>
+            <div class="flex items-center gap-2">
+              ${c.total_spent > 0 ? `<span class="text-sm font-medium text-gray-500">$${c.total_spent.toFixed(0)}</span>` : ''}
+              <span class="text-gray-300 text-xl">›</span>
+            </div>
           </div>
         </div>
       `).join('');

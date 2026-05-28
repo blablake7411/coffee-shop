@@ -11,7 +11,23 @@ router = APIRouter(prefix="/api/customers", tags=["customers"])
 
 @router.get("/", response_model=List[CustomerOut])
 def list_customers(db: Session = Depends(get_db)):
-    return db.query(Customer).order_by(Customer.name).all()
+    spent_subq = (
+        db.query(Order.customer_id, func.sum(Order.final_amount).label("total_spent"))
+        .filter(Order.status != "退款")
+        .group_by(Order.customer_id)
+        .subquery()
+    )
+    rows = (
+        db.query(Customer, spent_subq.c.total_spent)
+        .outerjoin(spent_subq, Customer.id == spent_subq.c.customer_id)
+        .order_by(Customer.name)
+        .all()
+    )
+    result = []
+    for customer, total_spent in rows:
+        customer.total_spent = total_spent or 0
+        result.append(customer)
+    return result
 
 
 @router.post("/", response_model=CustomerOut)
