@@ -185,7 +185,7 @@
       return `<div class="mt-1 ml-2 bg-gray-50 rounded-lg px-2 py-0.5">${rows}</div>`;
     }
 
-    function productBreakdownCard(breakdown) {
+    function productBreakdownCard(breakdown, shippingTotal = 0) {
       if (!breakdown || breakdown.length === 0) return '';
       const rows = breakdown.map(p => `
         <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
@@ -194,10 +194,17 @@
           <span class="font-medium text-gray-800 w-16 text-right">$${p.revenue.toFixed(0)}</span>
         </div>
       `).join('');
+      const shippingRow = shippingTotal > 0 ? `
+        <div class="flex items-center justify-between text-sm pt-2 mt-1 border-t border-gray-100">
+          <span class="text-gray-500 flex-1">運費</span>
+          <span class="text-gray-400 text-xs w-14 text-right">—</span>
+          <span class="font-medium text-gray-700 w-16 text-right">$${shippingTotal.toFixed(0)}</span>
+        </div>` : '';
       return `
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mt-3 mb-3">
           <div class="text-sm font-semibold text-gray-800 mb-1">品項銷售拆解</div>
           ${rows}
+          ${shippingRow}
         </div>
       `;
     }
@@ -251,8 +258,7 @@
           ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
         </div>
-        ${d.shipping_total > 0 ? `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex justify-between items-center"><span class="text-sm text-gray-600">運費收入</span><span class="font-semibold text-gray-800">$${d.shipping_total.toFixed(0)}</span></div>` : ''}
-        ${productBreakdownCard(d.product_breakdown)}
+        ${productBreakdownCard(d.product_breakdown, d.shipping_total)}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div class="text-sm font-semibold text-gray-800 mb-1">每日明細</div>
           ${dailyRows}
@@ -292,8 +298,7 @@
           ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
         </div>
-        ${d.shipping_total > 0 ? `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex justify-between items-center"><span class="text-sm text-gray-600">運費收入</span><span class="font-semibold text-gray-800">$${d.shipping_total.toFixed(0)}</span></div>` : ''}
-        ${productBreakdownCard(d.product_breakdown)}
+        ${productBreakdownCard(d.product_breakdown, d.shipping_total)}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div class="text-sm font-semibold text-gray-800 mb-1">每週明細</div>
           ${weeklyRows}
@@ -355,7 +360,7 @@
           ${useCost ? statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0)) : statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${useCost ? statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true) : statsCard('分成基礎', '$'+d.revenue.toFixed(0), '直接用營業額', true)}
         </div>
-        ${d.shipping_total > 0 ? `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex justify-between items-center"><span class="text-sm text-gray-600">運費收入</span><span class="font-semibold text-gray-800">$${d.shipping_total.toFixed(0)}</span></div>` : ''}
+        ${productBreakdownCard(d.product_breakdown, d.shipping_total)}
         <div class="grid grid-cols-2 gap-3 mb-4">
           ${statsCard('應匯老闆 (30%)', '$'+bossAmt.toFixed(0), bossLabel)}
           ${statsCard('自留 (70%)', '$'+selfAmt.toFixed(0), selfLabel)}

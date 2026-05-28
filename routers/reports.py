@@ -329,6 +329,7 @@ def quarterly_report(
         "self_payout": round(net_profit * SELF_RATIO, 2),
         "total_grams": total_grams,
         "total_pounds": round(total_grams / 453.592, 3),
+        "product_breakdown": _product_breakdown_in_range(db, all_start, all_end),
         "monthly_breakdown": monthly_breakdown,
         "purchases": _purchases_in_range(db, all_start, all_end),
     }
