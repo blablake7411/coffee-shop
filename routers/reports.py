@@ -143,6 +143,7 @@ def _product_breakdown_in_range(db: Session, start: date, end: date) -> list:
             OrderItem.gram_size,
             Order.subtotal.label("order_subtotal"),
             Order.final_amount,
+            Order.shipping_fee,
         )
         .join(OrderItem.order)
         .join(OrderItem.product)
@@ -157,13 +158,20 @@ def _product_breakdown_in_range(db: Session, start: date, end: date) -> list:
     for r in rows:
         name = r.name
         if name not in product_data:
-            product_data[name] = {"revenue": 0.0, "quantity": 0, "grams": 0.0}
-        ratio = r.final_amount / r.order_subtotal if r.order_subtotal else 1.0
-        product_data[name]["revenue"] += r.subtotal * ratio
+            product_data[name] = {"revenue": 0.0, "shipping": 0.0, "quantity": 0, "grams": 0.0}
+        ratio = r.subtotal / r.order_subtotal if r.order_subtotal else 1.0
+        product_data[name]["revenue"] += r.subtotal * (r.final_amount / r.order_subtotal if r.order_subtotal else 1.0)
+        product_data[name]["shipping"] += (r.shipping_fee or 0) * ratio
         product_data[name]["quantity"] += r.quantity
         product_data[name]["grams"] += r.gram_size * r.quantity
     return [
-        {"product": name, "revenue": round(v["revenue"], 1), "quantity": v["quantity"], "grams": v["grams"]}
+        {
+            "product": name,
+            "revenue": round(v["revenue"], 1),
+            "shipping": round(v["shipping"], 1),
+            "quantity": v["quantity"],
+            "grams": v["grams"],
+        }
         for name, v in sorted(product_data.items(), key=lambda x: -x[1]["revenue"])
     ]
 
