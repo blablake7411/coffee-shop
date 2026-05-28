@@ -135,9 +135,11 @@ def _product_breakdown_in_range(db: Session, start: date, end: date) -> list:
     rows = (
         db.query(
             Product.name,
-            func.sum(OrderItem.subtotal).label("revenue"),
-            func.sum(OrderItem.quantity).label("quantity"),
-            func.sum(OrderItem.gram_size * OrderItem.quantity).label("grams"),
+            OrderItem.subtotal,
+            OrderItem.quantity,
+            OrderItem.gram_size,
+            Order.subtotal.label("order_subtotal"),
+            Order.final_amount,
         )
         .join(OrderItem.order)
         .join(OrderItem.product)
@@ -146,13 +148,20 @@ def _product_breakdown_in_range(db: Session, start: date, end: date) -> list:
             Order.order_date <= end,
             Order.status != "退款",
         )
-        .group_by(Product.id)
-        .order_by(func.sum(OrderItem.subtotal).desc())
         .all()
     )
+    product_data: dict = {}
+    for r in rows:
+        name = r.name
+        if name not in product_data:
+            product_data[name] = {"revenue": 0.0, "quantity": 0, "grams": 0.0}
+        ratio = r.final_amount / r.order_subtotal if r.order_subtotal else 1.0
+        product_data[name]["revenue"] += r.subtotal * ratio
+        product_data[name]["quantity"] += r.quantity
+        product_data[name]["grams"] += r.gram_size * r.quantity
     return [
-        {"product": r.name, "revenue": r.revenue or 0, "quantity": r.quantity or 0, "grams": r.grams or 0}
-        for r in rows
+        {"product": name, "revenue": round(v["revenue"], 1), "quantity": v["quantity"], "grams": v["grams"]}
+        for name, v in sorted(product_data.items(), key=lambda x: -x[1]["revenue"])
     ]
 
 
