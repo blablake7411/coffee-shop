@@ -55,6 +55,7 @@ def _daily_breakdown(db: Session, start: date, end: date) -> list:
             "revenue": _revenue_in_range(db, d, d),
             "order_count": _order_count_in_range(db, d, d),
             "grams": _grams_in_range(db, d, d),
+            "purchases": _purchases_in_range(db, d, d),
         })
         d += timedelta(days=1)
     return result
@@ -72,6 +73,7 @@ def _weekly_breakdown(db: Session, start: date, end: date) -> list:
             "revenue": _revenue_in_range(db, eff_start, eff_end),
             "order_count": _order_count_in_range(db, eff_start, eff_end),
             "grams": _grams_in_range(db, eff_start, eff_end),
+            "purchases": _purchases_in_range(db, eff_start, eff_end),
         })
         week_start += timedelta(days=7)
     return result
@@ -110,6 +112,7 @@ def _monthly_breakdown_in_range(db: Session, start: date, end: date) -> list:
             "revenue": _revenue_in_range(db, eff_start, eff_end),
             "order_count": _order_count_in_range(db, eff_start, eff_end),
             "grams": _grams_in_range(db, eff_start, eff_end),
+            "purchases": _purchases_in_range(db, eff_start, eff_end),
         })
         m += 1
         if m > 12:

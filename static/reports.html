@@ -173,6 +173,18 @@
       else { initCustom(); loadCustom(); }
     }
 
+    function inlinePurchases(purchases) {
+      if (!purchases || purchases.length === 0) return '';
+      const rows = purchases.map(p => `
+        <div class="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0 text-gray-400">
+          <span class="w-10">${p.date}</span>
+          <span class="flex-1 px-2">${p.product}</span>
+          <span class="w-12 text-right">${p.grams.toFixed(0)}g</span>
+          <span class="w-14 text-right text-gray-600">$${p.total_cost.toFixed(0)}</span>
+        </div>`).join('');
+      return `<div class="mt-1 ml-2 bg-gray-50 rounded-lg px-2 py-0.5">${rows}</div>`;
+    }
+
     function productBreakdownCard(breakdown) {
       if (!breakdown || breakdown.length === 0) return '';
       const rows = breakdown.map(p => `
@@ -222,11 +234,14 @@
       const d = await res.json();
       document.getElementById('weekly-period').textContent = d.period;
       const dailyRows = d.daily_breakdown.map(day => `
-        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
-          <span class="text-gray-500 w-16">週${day.day} ${day.date}</span>
-          <span class="text-gray-400 text-xs w-10 text-center">${day.order_count}筆</span>
-          <span class="font-medium text-gray-800">$${day.revenue.toFixed(0)}</span>
-          <span class="text-gray-400 text-xs w-12 text-right">${day.grams > 0 ? day.grams.toFixed(0) : '—'}</span>
+        <div class="py-2 border-b border-gray-50 last:border-0">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-500 w-16">週${day.day} ${day.date}</span>
+            <span class="text-gray-400 text-xs w-10 text-center">${day.order_count}筆</span>
+            <span class="font-medium text-gray-800">$${day.revenue.toFixed(0)}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${day.grams > 0 ? day.grams.toFixed(0) : '—'}</span>
+          </div>
+          ${inlinePurchases(day.purchases)}
         </div>
       `).join('');
       document.getElementById('weekly-content').innerHTML = `
@@ -242,7 +257,6 @@
           <div class="text-sm font-semibold text-gray-800 mb-1">每日明細</div>
           ${dailyRows}
         </div>
-        ${purchasesCard(d.purchases)}
       `;
     }
 
@@ -261,11 +275,14 @@
       const d = await res.json();
       document.getElementById('monthly-period').textContent = d.period;
       const weeklyRows = d.weekly_breakdown.map(w => `
-        <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
-          <span class="text-gray-500">${w.label}</span>
-          <span class="text-gray-400 text-xs w-10 text-center">${w.order_count}筆</span>
-          <span class="font-medium text-gray-800">$${w.revenue.toFixed(0)}</span>
-          <span class="text-gray-400 text-xs w-12 text-right">${w.grams > 0 ? w.grams.toFixed(0) : '—'}</span>
+        <div class="py-2 border-b border-gray-50 last:border-0">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-500">${w.label}</span>
+            <span class="text-gray-400 text-xs w-10 text-center">${w.order_count}筆</span>
+            <span class="font-medium text-gray-800">$${w.revenue.toFixed(0)}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${w.grams > 0 ? w.grams.toFixed(0) : '—'}</span>
+          </div>
+          ${inlinePurchases(w.purchases)}
         </div>
       `).join('');
       document.getElementById('monthly-content').innerHTML = `
@@ -281,7 +298,6 @@
           <div class="text-sm font-semibold text-gray-800 mb-1">每週明細</div>
           ${weeklyRows}
         </div>
-        ${purchasesCard(d.purchases)}
       `;
     }
 
@@ -504,25 +520,34 @@
       const labelMap = { daily:'每日明細', weekly:'每週明細', monthly:'每月明細' };
       const rows = {
         daily: d.daily_breakdown.map(r => `
-          <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
-            <span class="text-gray-500 w-16">週${r.day} ${r.date}</span>
-            <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
-            <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
-            <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+          <div class="py-2 border-b border-gray-50 last:border-0">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-500 w-16">週${r.day} ${r.date}</span>
+              <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
+              <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
+              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+            </div>
+            ${inlinePurchases(r.purchases)}
           </div>`).join(''),
         weekly: d.weekly_breakdown.map(r => `
-          <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
-            <span class="text-gray-500">${r.label}</span>
-            <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
-            <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
-            <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+          <div class="py-2 border-b border-gray-50 last:border-0">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-500">${r.label}</span>
+              <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
+              <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
+              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+            </div>
+            ${inlinePurchases(r.purchases)}
           </div>`).join(''),
         monthly: d.monthly_breakdown.map(r => `
-          <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
-            <span class="text-gray-500">${r.label}</span>
-            <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
-            <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
-            <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+          <div class="py-2 border-b border-gray-50 last:border-0">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-500">${r.label}</span>
+              <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
+              <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
+              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+            </div>
+            ${inlinePurchases(r.purchases)}
           </div>`).join(''),
       };
       document.getElementById('custom-content').innerHTML = `
@@ -544,7 +569,6 @@
           <div class="text-sm font-semibold text-gray-800 mb-1">${labelMap[customBreakdown]}</div>
           ${rows[customBreakdown]}
         </div>
-        ${purchasesCard(d.purchases)}
       `;
       document.getElementById('custom-export-btns').style.removeProperty('display');
     }
