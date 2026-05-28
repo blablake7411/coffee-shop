@@ -91,22 +91,30 @@ class OrderItemOut(BaseModel):
         from_attributes = True
 
 
+class OrderItemsReplace(BaseModel):
+    items: List[OrderItemCreate]
+    discount_amount: Optional[float] = None
+
+
 class OrderCreate(BaseModel):
     customer_id: int
     order_date: Optional[date] = None
     status: str = "待確認"
     payment_method: str = "現金"
     discount_amount: float = 0
+    shipping_fee: float = 0
     is_credit: bool = False
     notes: Optional[str] = None
     items: List[OrderItemCreate]
 
 
 class OrderUpdate(BaseModel):
+    customer_id: Optional[int] = None
     status: Optional[str] = None
     order_date: Optional[date] = None
     payment_method: Optional[str] = None
     discount_amount: Optional[float] = None
+    shipping_fee: Optional[float] = None
     final_amount: Optional[float] = None
     is_credit: Optional[bool] = None
     credit_paid: Optional[bool] = None
@@ -121,6 +129,7 @@ class OrderOut(BaseModel):
     payment_method: str
     subtotal: float
     discount_amount: float
+    shipping_fee: float = 0
     final_amount: float
     is_credit: bool
     credit_paid: bool

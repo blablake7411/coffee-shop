@@ -118,6 +118,44 @@ def _monthly_breakdown_in_range(db: Session, start: date, end: date) -> list:
     return result
 
 
+def _shipping_in_range(db: Session, start: date, end: date) -> float:
+    result = (
+        db.query(func.sum(Order.shipping_fee))
+        .filter(
+            Order.order_date >= start,
+            Order.order_date <= end,
+            Order.status != "退款",
+        )
+        .scalar()
+    )
+    return result or 0.0
+
+
+def _product_breakdown_in_range(db: Session, start: date, end: date) -> list:
+    rows = (
+        db.query(
+            Product.name,
+            func.sum(OrderItem.subtotal).label("revenue"),
+            func.sum(OrderItem.quantity).label("quantity"),
+            func.sum(OrderItem.gram_size * OrderItem.quantity).label("grams"),
+        )
+        .join(OrderItem.order)
+        .join(OrderItem.product)
+        .filter(
+            Order.order_date >= start,
+            Order.order_date <= end,
+            Order.status != "退款",
+        )
+        .group_by(Product.id)
+        .order_by(func.sum(OrderItem.subtotal).desc())
+        .all()
+    )
+    return [
+        {"product": r.name, "revenue": r.revenue or 0, "quantity": r.quantity or 0, "grams": r.grams or 0}
+        for r in rows
+    ]
+
+
 def _purchase_cost_in_range(db: Session, start: date, end: date) -> float:
     dt_start = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
     dt_end = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=timezone.utc)
@@ -164,9 +202,11 @@ def weekly_report(week_offset: int = 0, local_date: Optional[str] = None, db: Se
     return {
         "period": f"{start} ~ {end}",
         "revenue": revenue,
+        "shipping_total": _shipping_in_range(db, start, end),
         "order_count": _order_count_in_range(db, start, end),
         "purchase_cost": cost,
         "net_profit": net_profit,
+        "product_breakdown": _product_breakdown_in_range(db, start, end),
         "daily_breakdown": _daily_breakdown(db, start, end),
         "purchases": _purchases_in_range(db, start, end),
     }
@@ -184,9 +224,11 @@ def monthly_report(year: Optional[int] = None, month: Optional[int] = None, db: 
     return {
         "period": f"{y}-{m:02d}",
         "revenue": revenue,
+        "shipping_total": _shipping_in_range(db, start, end),
         "order_count": _order_count_in_range(db, start, end),
         "purchase_cost": cost,
         "net_profit": net_profit,
+        "product_breakdown": _product_breakdown_in_range(db, start, end),
         "weekly_breakdown": _weekly_breakdown(db, start, end),
         "purchases": _purchases_in_range(db, start, end),
     }
@@ -267,6 +309,7 @@ def quarterly_report(
     return {
         "period": period_str,
         "revenue": total_revenue,
+        "shipping_total": _shipping_in_range(db, all_start, all_end),
         "order_count": order_count,
         "purchase_cost": total_cost,
         "net_profit": net_profit,
@@ -293,6 +336,7 @@ def custom_report(start_date: str, end_date: str, db: Session = Depends(get_db))
     return {
         "period": f"{start.month}/{start.day} ~ {end.month}/{end.day}",
         "revenue": revenue,
+        "shipping_total": _shipping_in_range(db, start, end),
         "order_count": _order_count_in_range(db, start, end),
         "purchase_cost": cost,
         "net_profit": net_profit,
@@ -300,6 +344,7 @@ def custom_report(start_date: str, end_date: str, db: Session = Depends(get_db))
         "self_payout": round(net_profit * SELF_RATIO, 2),
         "total_grams": total_grams,
         "total_pounds": round(total_grams / 453.592, 3),
+        "product_breakdown": _product_breakdown_in_range(db, start, end),
         "daily_breakdown": _daily_breakdown(db, start, end),
         "weekly_breakdown": _weekly_breakdown(db, start, end),
         "monthly_breakdown": _monthly_breakdown_in_range(db, start, end),

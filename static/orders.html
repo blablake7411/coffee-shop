@@ -73,13 +73,32 @@
 
   <!-- 訂單編輯 Modal -->
   <div id="detail-modal" class="fixed inset-0 bg-black/50 z-50 hidden overflow-y-auto">
-    <div class="min-h-screen flex items-end sm:items-center justify-center">
-      <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 mx-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold text-gray-900">訂單詳情</h2>
-          <button onclick="closeDetail()" class="text-gray-400 text-2xl leading-none">&times;</button>
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-lg rounded-2xl p-5 my-4">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="flex-1 min-w-0 relative">
+            <div id="detail-name-display" class="flex items-center gap-1.5">
+              <span class="text-lg font-bold text-gray-900 truncate" id="detail-customer-name"></span>
+              <button type="button" onclick="toggleNameEdit()" class="text-gray-300 hover:text-brand shrink-0">
+                <i class="ti ti-pencil text-sm"></i>
+              </button>
+            </div>
+            <div id="detail-name-edit" class="hidden">
+              <input type="text" id="detail-name-input"
+                class="w-full border border-brand rounded-lg px-2 py-1.5 text-base font-bold focus:outline-none"
+                oninput="onDetailNameInput()" autocomplete="off">
+              <div id="detail-name-suggestions" class="absolute left-0 right-0 bg-white border border-gray-200 rounded-xl mt-1 shadow-lg z-30 hidden max-h-40 overflow-y-auto text-sm"></div>
+            </div>
+          </div>
+          <button onclick="closeDetail()" class="text-gray-400 text-2xl leading-none shrink-0">&times;</button>
         </div>
-        <div id="detail-info" class="space-y-3 mb-4"></div>
+        <div id="items-editor" class="space-y-1.5 mb-2"></div>
+        <button type="button" onclick="addItemRow()" class="text-sm text-brand flex items-center gap-1 mt-2">
+          <i class="ti ti-plus text-xs"></i> 新增品項
+        </button>
+        <div class="mt-2 mb-3 text-sm text-right text-gray-500">
+          小計 <span id="items-subtotal-display" class="font-medium text-gray-800">$0</span>
+        </div>
         <hr class="border-gray-100 mb-4">
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
@@ -103,10 +122,14 @@
                 class="flex-1 py-2 rounded-lg text-sm font-medium border-2 transition">匯款</button>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-3 gap-3">
             <div>
               <label class="text-sm font-medium text-gray-600">折扣金額</label>
-              <input type="number" id="edit-discount" class="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2" min="0">
+              <input type="number" id="edit-discount" class="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2" min="0" oninput="recalcSubtotal()">
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-600">運費</label>
+              <input type="number" id="edit-shipping" class="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2" min="0">
             </div>
             <div>
               <label class="text-sm font-medium text-gray-600">實收金額</label>
@@ -154,6 +177,219 @@
     let selectedDate = null;
     let currentOrder = null;
     let activeFilter = null;
+    let products = [];
+    let customers = [];
+    let itemRowCount = 0;
+    let selectedNewCustomerId = null;
+
+    async function loadProducts() {
+      const res = await fetch('/api/products/');
+      products = await res.json();
+    }
+
+    async function ensureCustomers() {
+      if (!customers.length) {
+        const res = await fetch('/api/customers/');
+        customers = await res.json();
+      }
+    }
+
+    function toggleNameEdit() {
+      const display = document.getElementById('detail-name-display');
+      const edit = document.getElementById('detail-name-edit');
+      const isEditing = !edit.classList.contains('hidden');
+      display.classList.toggle('hidden', !isEditing);
+      edit.classList.toggle('hidden', isEditing);
+      if (!isEditing) {
+        const input = document.getElementById('detail-name-input');
+        input.value = currentOrder?.customer?.name || '';
+        selectedNewCustomerId = null;
+        ensureCustomers();
+        input.focus();
+      } else {
+        document.getElementById('detail-name-suggestions').classList.add('hidden');
+      }
+    }
+
+    async function onDetailNameInput() {
+      selectedNewCustomerId = null;
+      const q = document.getElementById('detail-name-input').value.trim().toLowerCase();
+      const box = document.getElementById('detail-name-suggestions');
+      if (!q) { box.classList.add('hidden'); return; }
+      await ensureCustomers();
+      const matches = customers.filter(c => c.name.toLowerCase().includes(q));
+      if (!matches.length) { box.classList.add('hidden'); return; }
+      box.innerHTML = matches.map(c =>
+        `<div class="px-3 py-2 cursor-pointer hover:bg-gray-50" onclick="selectDetailCustomer(${c.id},'${c.name.replace(/'/g,"\\'")}')">
+          ${c.name}
+        </div>`
+      ).join('');
+      box.classList.remove('hidden');
+    }
+
+    function selectDetailCustomer(id, name) {
+      selectedNewCustomerId = id;
+      document.getElementById('detail-name-input').value = name;
+      document.getElementById('detail-name-suggestions').classList.add('hidden');
+    }
+
+    function renderItemsEditor(items) {
+      document.getElementById('items-editor').innerHTML = '';
+      itemRowCount = 0;
+      items.forEach(item => addItemRow(item));
+      recalcSubtotal();
+    }
+
+    function addItemRow(item = null) {
+      const editor = document.getElementById('items-editor');
+      const id = itemRowCount++;
+      const div = document.createElement('div');
+      div.id = `er-${id}`;
+      div.className = 'item-row border border-gray-100 rounded-xl p-3 space-y-2 bg-white';
+      const productOptions = products.map(p =>
+        `<option value="${p.id}" ${item?.product_id == p.id ? 'selected' : ''}>${p.name}</option>`
+      ).join('');
+      div.innerHTML = `
+        <div class="flex items-center gap-2">
+          <select id="er-prod-${id}" class="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white" onchange="erProductChange(${id})">
+            <option value="">選擇商品</option>${productOptions}
+          </select>
+          <button type="button" onclick="document.getElementById('er-${id}').remove(); recalcSubtotal()" class="text-gray-300 hover:text-red-400 shrink-0">
+            <i class="ti ti-x"></i>
+          </button>
+        </div>
+        <div id="er-size-btns-${id}" class="flex gap-1 flex-wrap"></div>
+        <div id="er-custom-${id}" class="hidden grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs text-gray-500">克數</label>
+            <input type="number" id="er-cg-${id}" placeholder="g" min="0.1" step="0.1"
+              class="w-full mt-0.5 border border-gray-200 rounded-lg px-3 py-1.5 text-sm" oninput="erRecalc(${id})">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">售價 ($)</label>
+            <input type="number" id="er-cp-${id}" placeholder="$" min="0"
+              class="w-full mt-0.5 border border-gray-200 rounded-lg px-3 py-1.5 text-sm" oninput="erRecalc(${id})">
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 shrink-0">數量</label>
+          <input type="number" id="er-qty-${id}" value="${item?.quantity || 1}" min="1"
+            class="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center" oninput="erRecalc(${id})">
+          <span id="er-sub-${id}" class="text-sm text-brand font-medium ml-auto"></span>
+        </div>
+        <input type="hidden" id="er-gram-${id}" value="0">
+        <input type="hidden" id="er-price-${id}" value="0">
+      `;
+      editor.appendChild(div);
+      if (item?.product_id) erProductChange(id, item);
+    }
+
+    function erProductChange(id, preselect = null) {
+      const productId = parseInt(document.getElementById(`er-prod-${id}`).value);
+      const product = products.find(p => p.id === productId);
+      document.getElementById(`er-custom-${id}`).classList.add('hidden');
+      if (!product) {
+        document.getElementById(`er-size-btns-${id}`).innerHTML = '';
+        erRecalc(id);
+        return;
+      }
+      const sizes = [
+        { g: 3,  price: product.price_3g },
+        { g: 7,  price: product.price_7g },
+        { g: 14, price: product.price_14g },
+        { g: 28, price: product.price_28g },
+        product.price_custom_grams && product.price_custom_price
+          ? { g: product.price_custom_grams, price: product.price_custom_price } : null,
+      ].filter(s => s && s.price != null);
+      document.getElementById(`er-size-btns-${id}`).innerHTML =
+        sizes.map(s =>
+          `<button type="button" id="er-sz-${id}-${s.g}" onclick="erSetSize(${id},${s.g},${s.price})"
+            class="px-2.5 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition">
+            ${s.g}g / $${s.price}
+          </button>`
+        ).join('') +
+        `<button type="button" onclick="erSetSize(${id},0,0,'custom')"
+          class="px-2.5 py-1.5 text-xs border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-50">自訂</button>`;
+      if (preselect) {
+        const match = sizes.find(s => s.g == preselect.gram_size);
+        if (match) {
+          erSetSize(id, match.g, match.price);
+        } else {
+          erSetSize(id, 0, 0, 'custom');
+          document.getElementById(`er-cg-${id}`).value = preselect.gram_size;
+          document.getElementById(`er-cp-${id}`).value = preselect.unit_price;
+        }
+      }
+      erRecalc(id);
+    }
+
+    function erSetSize(id, grams, price, mode) {
+      document.querySelectorAll(`#er-size-btns-${id} button`).forEach(b => {
+        b.className = b.textContent.trim() === '自訂'
+          ? 'px-2.5 py-1.5 text-xs border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-50'
+          : 'px-2.5 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition';
+      });
+      if (mode === 'custom') {
+        document.getElementById(`er-custom-${id}`).classList.remove('hidden');
+        document.getElementById(`er-gram-${id}`).value = 0;
+        document.getElementById(`er-price-${id}`).value = 0;
+      } else {
+        document.getElementById(`er-custom-${id}`).classList.add('hidden');
+        document.getElementById(`er-gram-${id}`).value = grams;
+        document.getElementById(`er-price-${id}`).value = price;
+        const btn = document.getElementById(`er-sz-${id}-${grams}`);
+        if (btn) btn.className = 'px-2.5 py-1.5 text-xs bg-brand text-white rounded-lg font-medium transition';
+      }
+      erRecalc(id);
+    }
+
+    function erRecalc(id) {
+      const customVisible = !document.getElementById(`er-custom-${id}`)?.classList.contains('hidden');
+      const price = customVisible
+        ? parseFloat(document.getElementById(`er-cp-${id}`)?.value || 0)
+        : parseFloat(document.getElementById(`er-price-${id}`)?.value || 0);
+      const qty = parseInt(document.getElementById(`er-qty-${id}`)?.value || 1);
+      const sub = price * qty;
+      const el = document.getElementById(`er-sub-${id}`);
+      if (el) el.textContent = sub > 0 ? `小計 $${sub.toFixed(0)}` : '';
+      recalcSubtotal();
+    }
+
+    function recalcSubtotal() {
+      let total = 0;
+      document.querySelectorAll('#items-editor .item-row').forEach(row => {
+        const id = row.id.replace('er-', '');
+        const customVisible = !document.getElementById(`er-custom-${id}`)?.classList.contains('hidden');
+        const price = customVisible
+          ? parseFloat(document.getElementById(`er-cp-${id}`)?.value || 0)
+          : parseFloat(document.getElementById(`er-price-${id}`)?.value || 0);
+        const qty = parseInt(document.getElementById(`er-qty-${id}`)?.value || 1);
+        total += price * qty;
+      });
+      document.getElementById('items-subtotal-display').textContent = `$${total.toFixed(0)}`;
+      const discount = parseFloat(document.getElementById('edit-discount').value) || 0;
+      document.getElementById('edit-final').value = Math.max(0, total - discount).toFixed(0);
+    }
+
+    function getItemsFromEditor() {
+      const items = [];
+      document.querySelectorAll('#items-editor .item-row').forEach(row => {
+        const id = row.id.replace('er-', '');
+        const productId = parseInt(document.getElementById(`er-prod-${id}`)?.value);
+        if (!productId) return;
+        const customVisible = !document.getElementById(`er-custom-${id}`)?.classList.contains('hidden');
+        const gram = customVisible
+          ? parseFloat(document.getElementById(`er-cg-${id}`)?.value || 0)
+          : parseFloat(document.getElementById(`er-gram-${id}`)?.value || 0);
+        const price = customVisible
+          ? parseFloat(document.getElementById(`er-cp-${id}`)?.value || 0)
+          : parseFloat(document.getElementById(`er-price-${id}`)?.value || 0);
+        const qty = parseInt(document.getElementById(`er-qty-${id}`)?.value || 1);
+        if (!gram || !price) return;
+        items.push({ product_id: productId, gram_size: gram, quantity: qty, unit_price: price });
+      });
+      return items;
+    }
 
     function enterSearch() {
       document.getElementById('month-header').classList.add('hidden');
@@ -221,12 +457,16 @@
             </div>
             <div class="text-xs text-gray-400 mt-0.5 truncate">${summary || '無品項'}</div>
           </div>
-          <div class="font-bold text-gray-900 shrink-0">$${o.final_amount.toFixed(0)}</div>
+          <div class="text-right shrink-0">
+            <div class="font-bold text-gray-900">$${o.final_amount.toFixed(0)}</div>
+            ${(o.shipping_fee || 0) > 0 ? `<div class="text-xs text-gray-400">+運費 $${o.shipping_fee.toFixed(0)}</div>` : ''}
+          </div>
         </div>
       </div>`;
     }
 
     function init() {
+      loadProducts();
       const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
       const [ty, tm] = todayStr.split('-');
       currentYear = parseInt(ty);
@@ -358,20 +598,17 @@
 
     function openDetail(order) {
       currentOrder = order;
-      const info = document.getElementById('detail-info');
-      const summary = order.items.map(i =>
-        `<li>${i.product?.name || '?'} ${i.gram_size}g × ${i.quantity} = $${i.subtotal.toFixed(0)}</li>`
-      ).join('');
-      info.innerHTML = `
-        <div class="font-semibold text-gray-900">${order.customer?.name || '?'}</div>
-        <ul class="text-sm text-gray-600 list-disc list-inside space-y-0.5">${summary}</ul>
-        <div class="text-sm text-gray-600">小計 $${order.subtotal.toFixed(0)}　折扣 -$${order.discount_amount.toFixed(0)}　實收 <span class="font-bold text-gray-900">$${order.final_amount.toFixed(0)}</span></div>
-        ${order.credit_paid_at ? `<div class="text-xs text-green-600">還清：${new Date(order.credit_paid_at + 'Z').toLocaleString('zh-TW', { timeZone: TZ })}</div>` : ''}
-      `;
+      document.getElementById('detail-customer-name').textContent = order.customer?.name || '?';
+      document.getElementById('detail-name-display').classList.remove('hidden');
+      document.getElementById('detail-name-edit').classList.add('hidden');
+      document.getElementById('detail-name-suggestions').classList.add('hidden');
+      selectedNewCustomerId = null;
+      renderItemsEditor(order.items);
       setPayMethod(order.payment_method || '現金');
       document.getElementById('edit-date').value = order.order_date;
       document.getElementById('edit-status').value = order.status;
       document.getElementById('edit-discount').value = order.discount_amount;
+      document.getElementById('edit-shipping').value = order.shipping_fee || 0;
       document.getElementById('edit-final').value = order.final_amount;
       document.getElementById('edit-credit').checked = order.is_credit;
       document.getElementById('edit-credit-paid').checked = order.credit_paid;
@@ -396,13 +633,45 @@
     async function saveOrder() {
       if (!currentOrder) return;
       const keepDate = selectedDate;
+      const discount = parseFloat(document.getElementById('edit-discount').value) || 0;
+
+      let customerId = currentOrder.customer_id;
+      if (!document.getElementById('detail-name-edit').classList.contains('hidden')) {
+        const newName = document.getElementById('detail-name-input').value.trim();
+        if (newName && newName !== currentOrder.customer?.name) {
+          if (selectedNewCustomerId) {
+            customerId = selectedNewCustomerId;
+          } else {
+            await ensureCustomers();
+            const exact = customers.find(c => c.name === newName);
+            if (exact) {
+              customerId = exact.id;
+            } else {
+              const res = await fetch('/api/customers/', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ name: newName }),
+              });
+              const c = await res.json();
+              customerId = c.id;
+              customers.push(c);
+            }
+          }
+        }
+      }
+
+      await fetch(`/api/orders/${currentOrder.id}/items`, {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ items: getItemsFromEditor(), discount_amount: discount }),
+      });
       await fetch(`/api/orders/${currentOrder.id}`, {
         method: 'PATCH', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
+          customer_id: customerId !== currentOrder.customer_id ? customerId : undefined,
           order_date: document.getElementById('edit-date').value || null,
           status: document.getElementById('edit-status').value,
           payment_method: document.getElementById('pay-transfer').dataset.selected ? '匯款' : '現金',
-          discount_amount: parseFloat(document.getElementById('edit-discount').value) || 0,
+          discount_amount: discount,
+          shipping_fee: parseFloat(document.getElementById('edit-shipping').value) || 0,
           final_amount: parseFloat(document.getElementById('edit-final').value) || 0,
           is_credit: document.getElementById('edit-credit').checked,
           credit_paid: document.getElementById('edit-credit-paid').checked,

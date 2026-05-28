@@ -7,6 +7,14 @@ import models
 
 models.Base.metadata.create_all(bind=engine)
 
+from sqlalchemy import text
+with engine.connect() as _conn:
+    try:
+        _conn.execute(text("ALTER TABLE orders ADD COLUMN shipping_fee FLOAT DEFAULT 0"))
+        _conn.commit()
+    except Exception:
+        pass
+
 from routers import customers, products, orders, inventory, reports
 
 app = FastAPI(title="Coffee Shop Manager")

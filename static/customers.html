@@ -97,9 +97,15 @@
               <span class="text-sm">已還款</span>
             </label>
           </div>
-          <div>
-            <label class="text-xs text-gray-500">折扣金額</label>
-            <input type="number" id="edit-discount" min="0" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-gray-500">折扣金額</label>
+              <input type="number" id="edit-discount" min="0" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">運費</label>
+              <input type="number" id="edit-shipping" min="0" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+            </div>
           </div>
           <div>
             <label class="text-xs text-gray-500">備註</label>
@@ -237,7 +243,7 @@
             </div>
             <div class="text-right shrink-0">
               <div class="font-semibold text-gray-900">$${o.final_amount.toFixed(0)}</div>
-              <div class="text-xs text-gray-400">點擊編輯</div>
+              ${(o.shipping_fee || 0) > 0 ? `<div class="text-xs text-gray-400">+運費 $${o.shipping_fee.toFixed(0)}</div>` : '<div class="text-xs text-gray-400">點擊編輯</div>'}
             </div>
           </div>
         </div>`;
@@ -256,6 +262,7 @@
       document.getElementById('edit-is-credit').checked = o.is_credit;
       document.getElementById('edit-credit-paid').checked = o.credit_paid;
       document.getElementById('edit-discount').value = o.discount_amount || 0;
+      document.getElementById('edit-shipping').value = o.shipping_fee || 0;
       document.getElementById('edit-notes').value = o.notes || '';
       editPayMethod = o.payment_method || '現金';
       setEditPay(editPayMethod);
@@ -295,6 +302,7 @@
           is_credit: document.getElementById('edit-is-credit').checked,
           credit_paid: document.getElementById('edit-credit-paid').checked,
           discount_amount: discount,
+          shipping_fee: parseFloat(document.getElementById('edit-shipping').value) || 0,
           notes: document.getElementById('edit-notes').value.trim() || null,
         }),
       });

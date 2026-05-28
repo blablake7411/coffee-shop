@@ -72,6 +72,8 @@ def customer_orders(customer_id: int, db: Session = Depends(get_db)):
                 "order_date": str(o.order_date),
                 "status": o.status,
                 "payment_method": o.payment_method,
+                "discount_amount": o.discount_amount,
+                "shipping_fee": o.shipping_fee or 0,
                 "final_amount": o.final_amount,
                 "is_credit": o.is_credit,
                 "credit_paid": o.credit_paid,

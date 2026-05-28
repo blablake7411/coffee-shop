@@ -55,6 +55,7 @@ class Order(Base):
     subtotal = Column(Float, default=0)
     discount_amount = Column(Float, default=0)
     final_amount = Column(Float, default=0)
+    shipping_fee = Column(Float, default=0)
     payment_method = Column(String, default="現金")
     is_credit = Column(Boolean, default=False)
     credit_paid = Column(Boolean, default=False)
