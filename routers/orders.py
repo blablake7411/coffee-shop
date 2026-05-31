@@ -118,7 +118,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
         subtotal += item_subtotal
         items_data.append((item, item_subtotal, product))
 
-    final_amount = subtotal - data.discount_amount
+    final_amount = subtotal - data.discount_amount + data.shipping_fee
     order_date = data.order_date or date.today()
 
     order = Order(
@@ -184,7 +184,7 @@ def replace_order_items(order_id: int, data: OrderItemsReplace, db: Session = De
     discount = data.discount_amount if data.discount_amount is not None else order.discount_amount
     order.subtotal = subtotal
     order.discount_amount = discount
-    order.final_amount = subtotal - discount
+    order.final_amount = subtotal - discount + (order.shipping_fee or 0)
     order.updated_at = datetime.now(timezone.utc)
     db.commit()
     return _load_order(db, order.id)

@@ -129,7 +129,7 @@
             </div>
             <div>
               <label class="text-sm font-medium text-gray-600">運費</label>
-              <input type="number" id="edit-shipping" class="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2" min="0">
+              <input type="number" id="edit-shipping" class="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2" min="0" oninput="recalcSubtotal()">
             </div>
             <div>
               <label class="text-sm font-medium text-gray-600">實收金額</label>
@@ -368,7 +368,8 @@
       });
       document.getElementById('items-subtotal-display').textContent = `$${total.toFixed(0)}`;
       const discount = parseFloat(document.getElementById('edit-discount').value) || 0;
-      document.getElementById('edit-final').value = Math.max(0, total - discount).toFixed(0);
+      const shipping = parseFloat(document.getElementById('edit-shipping').value) || 0;
+      document.getElementById('edit-final').value = Math.max(0, total - discount + shipping).toFixed(0);
     }
 
     function getItemsFromEditor() {

@@ -160,7 +160,8 @@ def _product_breakdown_in_range(db: Session, start: date, end: date) -> list:
         if name not in product_data:
             product_data[name] = {"revenue": 0.0, "shipping": 0.0, "quantity": 0, "grams": 0.0}
         ratio = r.subtotal / r.order_subtotal if r.order_subtotal else 1.0
-        product_data[name]["revenue"] += r.subtotal * (r.final_amount / r.order_subtotal if r.order_subtotal else 1.0)
+        product_revenue_base = r.final_amount - (r.shipping_fee or 0)
+        product_data[name]["revenue"] += r.subtotal * (product_revenue_base / r.order_subtotal if r.order_subtotal else 1.0)
         product_data[name]["shipping"] += (r.shipping_fee or 0) * ratio
         product_data[name]["quantity"] += r.quantity
         product_data[name]["grams"] += r.gram_size * r.quantity
