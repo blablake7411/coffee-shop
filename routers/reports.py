@@ -176,6 +176,21 @@ def _product_breakdown_in_range(db: Session, start: date, end: date) -> list:
     ]
 
 
+def _credit_unpaid_in_range(db: Session, start: date, end: date) -> float:
+    result = (
+        db.query(func.sum(Order.final_amount))
+        .filter(
+            Order.order_date >= start,
+            Order.order_date <= end,
+            Order.is_credit == True,
+            Order.credit_paid == False,
+            Order.status != "退款",
+        )
+        .scalar()
+    )
+    return result or 0.0
+
+
 def _purchase_cost_in_range(db: Session, start: date, end: date) -> float:
     dt_start = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
     dt_end = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=timezone.utc)
@@ -219,6 +234,7 @@ def weekly_report(week_offset: int = 0, local_date: Optional[str] = None, db: Se
     revenue = _revenue_in_range(db, start, end)
     cost = _purchase_cost_in_range(db, start, end)
     net_profit = revenue - cost
+    credit_unpaid = _credit_unpaid_in_range(db, start, end)
     return {
         "period": f"{start} ~ {end}",
         "revenue": revenue,
@@ -226,6 +242,8 @@ def weekly_report(week_offset: int = 0, local_date: Optional[str] = None, db: Se
         "order_count": _order_count_in_range(db, start, end),
         "purchase_cost": cost,
         "net_profit": net_profit,
+        "credit_unpaid": credit_unpaid,
+        "actual_net_profit": net_profit - credit_unpaid,
         "product_breakdown": _product_breakdown_in_range(db, start, end),
         "daily_breakdown": _daily_breakdown(db, start, end),
         "purchases": _purchases_in_range(db, start, end),
@@ -241,6 +259,7 @@ def monthly_report(year: Optional[int] = None, month: Optional[int] = None, db: 
     revenue = _revenue_in_range(db, start, end)
     cost = _purchase_cost_in_range(db, start, end)
     net_profit = revenue - cost
+    credit_unpaid = _credit_unpaid_in_range(db, start, end)
     return {
         "period": f"{y}-{m:02d}",
         "revenue": revenue,
@@ -248,6 +267,8 @@ def monthly_report(year: Optional[int] = None, month: Optional[int] = None, db: 
         "order_count": _order_count_in_range(db, start, end),
         "purchase_cost": cost,
         "net_profit": net_profit,
+        "credit_unpaid": credit_unpaid,
+        "actual_net_profit": net_profit - credit_unpaid,
         "product_breakdown": _product_breakdown_in_range(db, start, end),
         "weekly_breakdown": _weekly_breakdown(db, start, end),
         "purchases": _purchases_in_range(db, start, end),
@@ -303,6 +324,9 @@ def quarterly_report(
     total_revenue = sum(r["revenue"] for r in monthly_breakdown)
     total_cost = sum(r["purchase_cost"] for r in monthly_breakdown)
     net_profit = total_revenue - total_cost
+    all_start, _ = _month_range(*month_pairs[0])
+    _, all_end = _month_range(*month_pairs[-1])
+    credit_unpaid = _credit_unpaid_in_range(db, all_start, all_end)
 
     total_grams = 0.0
     for py, pm in month_pairs:
@@ -324,8 +348,6 @@ def quarterly_report(
     else:
         period_str = f"{y0}/{m0:02d} ～ {yn}/{mn:02d}"
 
-    all_start, _ = _month_range(*month_pairs[0])
-    _, all_end = _month_range(*month_pairs[-1])
     return {
         "period": period_str,
         "revenue": total_revenue,
@@ -333,6 +355,8 @@ def quarterly_report(
         "order_count": order_count,
         "purchase_cost": total_cost,
         "net_profit": net_profit,
+        "credit_unpaid": credit_unpaid,
+        "actual_net_profit": net_profit - credit_unpaid,
         "boss_payout": round(net_profit * BOSS_RATIO, 2),
         "self_payout": round(net_profit * SELF_RATIO, 2),
         "total_grams": total_grams,
@@ -353,6 +377,7 @@ def custom_report(start_date: str, end_date: str, db: Session = Depends(get_db))
     revenue = _revenue_in_range(db, start, end)
     cost = _purchase_cost_in_range(db, start, end)
     net_profit = revenue - cost
+    credit_unpaid = _credit_unpaid_in_range(db, start, end)
     total_grams = _grams_in_range(db, start, end)
     return {
         "period": f"{start.month}/{start.day} ~ {end.month}/{end.day}",
@@ -361,6 +386,8 @@ def custom_report(start_date: str, end_date: str, db: Session = Depends(get_db))
         "order_count": _order_count_in_range(db, start, end),
         "purchase_cost": cost,
         "net_profit": net_profit,
+        "credit_unpaid": credit_unpaid,
+        "actual_net_profit": net_profit - credit_unpaid,
         "boss_payout": round(net_profit * BOSS_RATIO, 2),
         "self_payout": round(net_profit * SELF_RATIO, 2),
         "total_grams": total_grams,

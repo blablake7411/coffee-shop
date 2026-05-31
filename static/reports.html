@@ -230,6 +230,21 @@
       `;
     }
 
+    function creditBanner(creditUnpaid, actualNetProfit) {
+      if (!creditUnpaid || creditUnpaid <= 0) return '';
+      return `
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-3 flex justify-between items-center">
+          <div>
+            <div class="text-xs text-amber-600 font-medium mb-0.5">賒帳未收</div>
+            <div class="text-base font-bold text-amber-800">$${creditUnpaid.toFixed(0)}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-gray-500 font-medium mb-0.5">實收淨利</div>
+            <div class="text-base font-bold text-gray-800">$${actualNetProfit.toFixed(0)}</div>
+          </div>
+        </div>`;
+    }
+
     function statsCard(label, value, sub='', accent=false) {
       return `<div class="${accent ? 'bg-brand text-white' : 'bg-white border border-gray-100'} rounded-2xl p-4 shadow-sm">
         <div class="text-xs ${accent ? 'text-orange-100' : 'text-gray-500'} mb-1">${label}</div>
@@ -261,6 +276,7 @@
           ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
         </div>
+        ${creditBanner(d.credit_unpaid, d.actual_net_profit)}
         ${productBreakdownCard(d.product_breakdown, d.shipping_total)}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div class="text-sm font-semibold text-gray-800 mb-1">每日明細</div>
@@ -301,6 +317,7 @@
           ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
         </div>
+        ${creditBanner(d.credit_unpaid, d.actual_net_profit)}
         ${productBreakdownCard(d.product_breakdown, d.shipping_total)}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div class="text-sm font-semibold text-gray-800 mb-1">每週明細</div>
@@ -363,6 +380,7 @@
           ${useCost ? statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0)) : statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${useCost ? statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true) : statsCard('分成基礎', '$'+d.revenue.toFixed(0), '直接用營業額', true)}
         </div>
+        ${creditBanner(d.credit_unpaid, d.actual_net_profit)}
         ${productBreakdownCard(d.product_breakdown, d.shipping_total)}
         <div class="grid grid-cols-2 gap-3 mb-4">
           ${statsCard('應匯老闆 (30%)', '$'+bossAmt.toFixed(0), bossLabel)}
@@ -565,6 +583,7 @@
           ${statsCard('進貨成本', '$'+d.purchase_cost.toFixed(0))}
           ${statsCard('淨利', '$'+d.net_profit.toFixed(0), '', true)}
         </div>
+        ${creditBanner(d.credit_unpaid, d.actual_net_profit)}
         ${d.shipping_total > 0 ? `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex justify-between items-center"><span class="text-sm text-gray-600">運費收入</span><span class="font-semibold text-gray-800">$${d.shipping_total.toFixed(0)}</span></div>` : ''}
         <div class="grid grid-cols-2 gap-3 mb-4">
           ${statsCard('應匯老闆 (30%)', '$'+d.boss_payout.toFixed(0), '淨利×30%')}
