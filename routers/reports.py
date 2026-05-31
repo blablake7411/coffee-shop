@@ -203,6 +203,66 @@ def _purchase_cost_in_range(db: Session, start: date, end: date) -> float:
     return result or 0.0
 
 
+def _settlement_breakdown(db: Session, start: date, end: date) -> list:
+    rows = (
+        db.query(
+            Product.id,
+            Product.name,
+            OrderItem.subtotal.label("item_subtotal"),
+            OrderItem.gram_size,
+            OrderItem.quantity,
+            Order.subtotal.label("order_subtotal"),
+            Order.final_amount,
+        )
+        .join(OrderItem.order)
+        .join(OrderItem.product)
+        .filter(
+            Order.order_date >= start,
+            Order.order_date <= end,
+            Order.status != "退款",
+        )
+        .all()
+    )
+    data: dict = {}
+    for r in rows:
+        pid = r.id
+        if pid not in data:
+            data[pid] = {"product": r.name, "revenue": 0.0, "purchase_cost": 0.0, "sold_grams": 0.0, "purchased_grams": 0.0}
+        ratio = r.item_subtotal / r.order_subtotal if r.order_subtotal else 1.0
+        data[pid]["revenue"] += r.final_amount * ratio
+        data[pid]["sold_grams"] += r.gram_size * r.quantity
+
+    dt_start = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
+    dt_end = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=timezone.utc)
+    cost_rows = (
+        db.query(
+            PurchaseRecord.product_id,
+            func.sum(PurchaseRecord.total_cost).label("total_cost"),
+            func.sum(PurchaseRecord.quantity_grams).label("total_grams"),
+        )
+        .filter(PurchaseRecord.purchased_at >= dt_start, PurchaseRecord.purchased_at <= dt_end)
+        .group_by(PurchaseRecord.product_id)
+        .all()
+    )
+    for r in cost_rows:
+        pid = r.product_id
+        if pid not in data:
+            p = db.query(Product).filter(Product.id == pid).first()
+            data[pid] = {"product": p.name if p else "—", "revenue": 0.0, "purchase_cost": 0.0, "sold_grams": 0.0, "purchased_grams": 0.0}
+        data[pid]["purchase_cost"] += r.total_cost
+        data[pid]["purchased_grams"] += r.total_grams
+
+    result = []
+    for v in data.values():
+        v["expected_cash"] = round(v["revenue"] - v["purchase_cost"], 1)
+        v["revenue"] = round(v["revenue"], 1)
+        v["purchase_cost"] = round(v["purchase_cost"], 1)
+        v["sold_grams"] = round(v["sold_grams"], 1)
+        v["purchased_grams"] = round(v["purchased_grams"], 1)
+        result.append(v)
+    return sorted(result, key=lambda x: -x["revenue"])
+
+
 def _order_count_in_range(db: Session, start: date, end: date) -> int:
     return db.query(Order).filter(Order.order_date >= start, Order.order_date <= end).count()
 
@@ -533,3 +593,42 @@ def export_custom_to_sheets(
     ).execute()
 
     return {"url": f"https://docs.google.com/spreadsheets/d/{ss_id}"}
+
+
+@router.get("/settlement")
+def settlement_report(year: Optional[int] = None, month: Optional[int] = None, db: Session = Depends(get_db)):
+    today = date.today()
+    y = year or today.year
+    m = month or today.month
+    start, end = _month_range(y, m)
+
+    product_settlement = _settlement_breakdown(db, start, end)
+    total_revenue = sum(p["revenue"] for p in product_settlement)
+    total_cost = sum(p["purchase_cost"] for p in product_settlement)
+    expected_cash = round(total_revenue - total_cost, 1)
+    credit_unpaid = _credit_unpaid_in_range(db, start, end)
+    actual_cash = round(expected_cash - credit_unpaid, 1)
+
+    dt_start = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
+    dt_end = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=timezone.utc)
+    total_grams_purchased = (
+        db.query(func.sum(PurchaseRecord.quantity_grams))
+        .filter(PurchaseRecord.purchased_at >= dt_start, PurchaseRecord.purchased_at <= dt_end)
+        .scalar()
+    ) or 0.0
+    total_pounds_purchased = total_grams_purchased / 453.592
+    avg_cost_per_pound = total_cost / total_pounds_purchased if total_pounds_purchased > 0 else 0.0
+
+    return {
+        "period": f"{y}-{m:02d}",
+        "product_settlement": product_settlement,
+        "total_revenue": round(total_revenue, 1),
+        "total_purchase_cost": round(total_cost, 1),
+        "expected_cash": expected_cash,
+        "credit_unpaid": round(credit_unpaid, 1),
+        "actual_cash": actual_cash,
+        "total_grams_purchased": round(total_grams_purchased, 1),
+        "total_pounds_purchased": round(total_pounds_purchased, 3),
+        "avg_cost_per_pound": round(avg_cost_per_pound, 2),
+        "purchases": _purchases_in_range(db, start, end),
+    }
