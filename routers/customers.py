@@ -42,18 +42,24 @@ def create_customer(data: CustomerCreate, db: Session = Depends(get_db)):
 @router.get("/credits")
 def credit_summary(db: Session = Depends(get_db)):
     rows = (
-        db.query(Customer, func.sum(Order.final_amount), func.count(Order.id))
+        db.query(Customer, Order.final_amount, Order.credit_amount)
         .join(Order, Order.customer_id == Customer.id)
         .filter(Order.is_credit == True, Order.credit_paid == False)
-        .group_by(Customer.id)
-        .order_by(func.sum(Order.final_amount).desc())
         .all()
     )
-    return [
-        {"id": c.id, "name": c.name, "messenger_name": c.messenger_name,
-         "total_owed": round(total, 0), "order_count": count}
-        for c, total, count in rows
-    ]
+    by_customer: dict = {}
+    for c, final_amount, credit_amount in rows:
+        owed = credit_amount if (credit_amount or 0) > 0 else final_amount
+        if c.id not in by_customer:
+            by_customer[c.id] = {"customer": c, "total_owed": 0.0, "order_count": 0}
+        by_customer[c.id]["total_owed"] += owed
+        by_customer[c.id]["order_count"] += 1
+    return sorted([
+        {"id": v["customer"].id, "name": v["customer"].name,
+         "messenger_name": v["customer"].messenger_name,
+         "total_owed": round(v["total_owed"], 0), "order_count": v["order_count"]}
+        for v in by_customer.values()
+    ], key=lambda x: -x["total_owed"])
 
 
 @router.get("/{customer_id}/orders")
@@ -72,7 +78,10 @@ def customer_orders(customer_id: int, db: Session = Depends(get_db)):
         o.final_amount for o in orders
         if (o.status == "完成" and not o.is_credit) or (o.is_credit and o.credit_paid)
     )
-    credit_owed = sum(o.final_amount for o in orders if o.is_credit and not o.credit_paid)
+    credit_owed = sum(
+        (o.credit_amount if (o.credit_amount or 0) > 0 else o.final_amount)
+        for o in orders if o.is_credit and not o.credit_paid
+    )
     return {
         "customer": {
             "id": customer.id, "name": customer.name,
@@ -88,10 +97,9 @@ def customer_orders(customer_id: int, db: Session = Depends(get_db)):
                 "order_date": str(o.order_date),
                 "status": o.status,
                 "payment_method": o.payment_method,
-                "discount_amount": o.discount_amount,
-                "shipping_fee": o.shipping_fee or 0,
                 "final_amount": o.final_amount,
                 "is_credit": o.is_credit,
+                "credit_amount": o.credit_amount or 0,
                 "credit_paid": o.credit_paid,
                 "notes": o.notes,
                 "items": [

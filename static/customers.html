@@ -87,25 +87,20 @@
               <button id="edit-pay-transfer" type="button" onclick="setEditPay('匯款')" class="flex-1 py-2 rounded-xl text-sm font-medium border-2 transition">匯款</button>
             </div>
           </div>
-          <div class="flex gap-4">
+          <div class="flex flex-wrap gap-4 items-center">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="edit-is-credit" class="accent-brand w-4 h-4">
+              <input type="checkbox" id="edit-is-credit" class="accent-brand w-4 h-4" onchange="toggleCreditAmt()">
               <span class="text-sm">賒帳</span>
             </label>
+            <div id="credit-amt-wrap" class="hidden flex items-center gap-1">
+              <span class="text-xs text-gray-500">欠款</span>
+              <input type="number" id="edit-credit-amount" min="0" placeholder="$0"
+                class="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+            </div>
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" id="edit-credit-paid" class="accent-green-600 w-4 h-4">
               <span class="text-sm">已還款</span>
             </label>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs text-gray-500">折扣金額</label>
-              <input type="number" id="edit-discount" min="0" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="text-xs text-gray-500">運費</label>
-              <input type="number" id="edit-shipping" min="0" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm">
-            </div>
           </div>
           <div>
             <label class="text-xs text-gray-500">備註</label>
@@ -230,7 +225,7 @@
       document.getElementById('cust-orders').innerHTML = orders.length ? orders.map(o => {
         const summary = o.items.map(i => `${i.product_name} ${i.gram_size}g×${i.quantity}`).join('、');
         const creditBadge = o.is_credit
-          ? `<span class="text-xs px-1.5 py-0.5 rounded-full ${o.credit_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.credit_paid ? '已還' : '未還'}</span>`
+          ? `<span class="text-xs px-1.5 py-0.5 rounded-full ${o.credit_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.credit_paid ? '已還' : (o.credit_amount > 0 ? `賒帳 $${o.credit_amount.toFixed(0)}` : '賒帳')}</span>`
           : '';
         return `
         <div class="border border-gray-100 rounded-xl p-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition"
@@ -259,13 +254,19 @@
       document.getElementById('customer-modal').classList.add('hidden');
     }
 
+    function toggleCreditAmt() {
+      const checked = document.getElementById('edit-is-credit').checked;
+      document.getElementById('credit-amt-wrap').classList.toggle('hidden', !checked);
+      if (!checked) document.getElementById('edit-credit-amount').value = '';
+    }
+
     function openOrderEdit(o) {
       editingOrderId = o.id;
       document.getElementById('edit-date').value = o.order_date;
       document.getElementById('edit-is-credit').checked = o.is_credit;
+      document.getElementById('edit-credit-amount').value = o.credit_amount || '';
+      document.getElementById('credit-amt-wrap').classList.toggle('hidden', !o.is_credit);
       document.getElementById('edit-credit-paid').checked = o.credit_paid;
-      document.getElementById('edit-discount').value = o.discount_amount || 0;
-      document.getElementById('edit-shipping').value = o.shipping_fee || 0;
       document.getElementById('edit-notes').value = o.notes || '';
       editPayMethod = o.payment_method || '現金';
       setEditPay(editPayMethod);
@@ -294,7 +295,6 @@
 
     async function saveOrderEdit() {
       const status = document.getElementById('edit-status-btns').dataset.status;
-      const discount = parseFloat(document.getElementById('edit-discount').value) || 0;
       await fetch(`/api/orders/${editingOrderId}`, {
         method: 'PATCH',
         headers: {'Content-Type':'application/json'},
@@ -303,9 +303,8 @@
           status,
           payment_method: editPayMethod,
           is_credit: document.getElementById('edit-is-credit').checked,
+          credit_amount: parseFloat(document.getElementById('edit-credit-amount').value) || 0,
           credit_paid: document.getElementById('edit-credit-paid').checked,
-          discount_amount: discount,
-          shipping_fee: parseFloat(document.getElementById('edit-shipping').value) || 0,
           notes: document.getElementById('edit-notes').value.trim() || null,
         }),
       });
