@@ -128,10 +128,15 @@
             <label class="text-sm font-medium text-gray-600">實收金額（自動計算）</label>
             <input type="number" id="edit-final" class="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 bg-gray-50" min="0" readonly>
           </div>
-          <div class="flex flex-wrap gap-4">
+          <div class="flex flex-wrap gap-4 items-center">
             <label class="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" id="edit-credit" class="accent-brand w-4 h-4"> 賒帳
+              <input type="checkbox" id="edit-credit" class="accent-brand w-4 h-4" onchange="toggleCreditAmount()"> 賒帳
             </label>
+            <div id="credit-amount-wrap" class="hidden flex items-center gap-1">
+              <span class="text-sm text-gray-500">欠款</span>
+              <input type="number" id="edit-credit-amount" min="0" placeholder="$0"
+                class="w-24 border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
+            </div>
             <label class="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" id="edit-credit-paid" class="accent-green-600 w-4 h-4"> 已還清
             </label>
@@ -452,7 +457,7 @@
     function renderOrderCard(o, showDate = false) {
       const summary = o.items.map(i => `${i.product?.name || '?'} ${i.gram_size}g×${i.quantity}`).join('、');
       const creditBadge = o.is_credit
-        ? `<span class="text-xs px-1.5 py-0.5 rounded-full ${o.credit_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.credit_paid ? '已還' : '未還'}</span>`
+        ? `<span class="text-xs px-1.5 py-0.5 rounded-full ${o.credit_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.credit_paid ? '已還' : (o.credit_amount > 0 ? `賒帳 $${o.credit_amount.toFixed(0)}` : '賒帳')}</span>`
         : '';
       const payBadge = o.payment_method === '匯款'
         ? '<span class="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">匯款</span>'
@@ -491,6 +496,12 @@
         loadMonth();
       });
       loadMonth();
+    }
+
+    function toggleCreditAmount() {
+      const checked = document.getElementById('edit-credit').checked;
+      document.getElementById('credit-amount-wrap').classList.toggle('hidden', !checked);
+      if (!checked) document.getElementById('edit-credit-amount').value = '';
     }
 
     function prevMonth() {
@@ -638,6 +649,8 @@
         shipBanner.classList.add('hidden');
       }
       document.getElementById('edit-credit').checked = order.is_credit;
+      document.getElementById('edit-credit-amount').value = order.credit_amount || '';
+      document.getElementById('credit-amount-wrap').classList.toggle('hidden', !order.is_credit);
       document.getElementById('edit-credit-paid').checked = order.credit_paid;
       document.getElementById('edit-notes').value = order.notes || '';
       document.getElementById('detail-modal').classList.remove('hidden');
@@ -697,6 +710,7 @@
           status: document.getElementById('edit-status').value,
           payment_method: document.getElementById('pay-transfer').dataset.selected ? '匯款' : '現金',
           is_credit: document.getElementById('edit-credit').checked,
+          credit_amount: parseFloat(document.getElementById('edit-credit-amount').value) || 0,
           credit_paid: document.getElementById('edit-credit-paid').checked,
           notes: document.getElementById('edit-notes').value || null,
         }),

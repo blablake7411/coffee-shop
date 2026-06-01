@@ -64,10 +64,17 @@
             class="flex-1 py-2 rounded-xl text-sm font-medium border-2 border-gray-200 text-gray-500 transition">匯款</button>
         </div>
       </div>
-      <label class="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" id="is-credit" class="accent-brand w-5 h-5">
-        <span class="text-sm font-medium">賒帳（尚未付款）</span>
-      </label>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="is-credit" class="accent-brand w-5 h-5" onchange="toggleNewCreditAmount()">
+          <span class="text-sm font-medium">賒帳</span>
+        </label>
+        <div id="new-credit-amount-wrap" class="hidden flex items-center gap-1">
+          <span class="text-sm text-gray-500">欠款</span>
+          <input type="number" id="credit-amount" min="0" placeholder="$0"
+            class="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        </div>
+      </div>
       <div>
         <label class="text-sm text-gray-500">備註</label>
         <textarea id="notes" rows="2" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"></textarea>
@@ -118,6 +125,12 @@
       customers = await custRes.json();
       products = await prodRes.json();
       addItem();
+    }
+
+    function toggleNewCreditAmount() {
+      const checked = document.getElementById('is-credit').checked;
+      document.getElementById('new-credit-amount-wrap').classList.toggle('hidden', !checked);
+      if (!checked) document.getElementById('credit-amount').value = '';
     }
 
     function setPayMethod(method) {
@@ -335,6 +348,7 @@
           order_date: document.getElementById('order-date').value || null,
           payment_method: document.getElementById('pay-transfer').classList.contains('bg-indigo-600') ? '匯款' : '現金',
           is_credit: document.getElementById('is-credit').checked,
+          credit_amount: parseFloat(document.getElementById('credit-amount').value) || 0,
           notes: document.getElementById('notes').value.trim() || null,
           items,
         }),

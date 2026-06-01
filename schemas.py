@@ -109,6 +109,7 @@ class OrderCreate(BaseModel):
     discount_amount: float = 0
     shipping_fee: float = 0
     is_credit: bool = False
+    credit_amount: float = 0
     notes: Optional[str] = None
     items: List[OrderItemCreate]
 
@@ -122,6 +123,7 @@ class OrderUpdate(BaseModel):
     shipping_fee: Optional[float] = None
     final_amount: Optional[float] = None
     is_credit: Optional[bool] = None
+    credit_amount: Optional[float] = None
     credit_paid: Optional[bool] = None
     notes: Optional[str] = None
 
@@ -137,6 +139,7 @@ class OrderOut(BaseModel):
     shipping_fee: float = 0
     final_amount: float
     is_credit: bool
+    credit_amount: float = 0
     credit_paid: bool
     credit_paid_at: Optional[datetime]
     notes: Optional[str]

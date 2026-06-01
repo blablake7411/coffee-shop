@@ -58,6 +58,7 @@ class Order(Base):
     shipping_fee = Column(Float, default=0)
     payment_method = Column(String, default="現金")
     is_credit = Column(Boolean, default=False)
+    credit_amount = Column(Float, default=0.0)
     credit_paid = Column(Boolean, default=False)
     credit_paid_at = Column(DateTime, nullable=True)
     notes = Column(Text)

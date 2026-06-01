@@ -178,8 +178,8 @@ def _product_breakdown_in_range(db: Session, start: date, end: date) -> list:
 
 
 def _credit_unpaid_in_range(db: Session, start: date, end: date) -> float:
-    result = (
-        db.query(func.sum(Order.final_amount))
+    orders = (
+        db.query(Order.final_amount, Order.credit_amount)
         .filter(
             Order.order_date >= start,
             Order.order_date <= end,
@@ -187,9 +187,12 @@ def _credit_unpaid_in_range(db: Session, start: date, end: date) -> float:
             Order.credit_paid == False,
             Order.status != "退款",
         )
-        .scalar()
+        .all()
     )
-    return result or 0.0
+    total = 0.0
+    for o in orders:
+        total += o.credit_amount if (o.credit_amount or 0) > 0 else o.final_amount
+    return total
 
 
 def _purchase_cost_in_range(db: Session, start: date, end: date) -> float:

@@ -13,6 +13,7 @@ with engine.connect() as _conn:
         "ALTER TABLE orders ADD COLUMN shipping_fee FLOAT DEFAULT 0",
         "ALTER TABLE order_items ADD COLUMN discount_amount FLOAT DEFAULT 0",
         "ALTER TABLE order_items ADD COLUMN shipping_fee FLOAT DEFAULT 0",
+        "ALTER TABLE orders ADD COLUMN credit_amount FLOAT DEFAULT 0",
     ]:
         try:
             _conn.execute(text(_sql))
