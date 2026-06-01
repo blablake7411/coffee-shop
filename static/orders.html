@@ -471,8 +471,8 @@
           </div>
           <div class="text-right shrink-0">
             <div class="font-bold text-gray-900">$${o.final_amount.toFixed(0)}</div>
-            ${(o.shipping_fee || 0) > 0 ? `<div class="text-xs text-gray-400">已含運費 $${o.shipping_fee.toFixed(0)}</div>` : ''}
-            ${(o.discount_amount || 0) > 0 ? `<div class="text-xs text-red-400">已含折扣 $${o.discount_amount.toFixed(0)}</div>` : ''}
+            ${(o.shipping_fee || 0) > 0 ? `<div class="text-xs text-gray-400">含運費 $${o.shipping_fee.toFixed(0)}</div>` : ''}
+            ${(o.discount_amount || 0) > 0 ? `<div class="text-xs text-red-400">含折扣 $${o.discount_amount.toFixed(0)}</div>` : ''}
           </div>
         </div>
       </div>`;
