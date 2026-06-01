@@ -768,17 +768,7 @@
         </div>`;
       }).join('');
 
-      const creditRow = d.credit_unpaid > 0 ? `
-        <div class="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-3 flex justify-between items-center">
-          <div>
-            <div class="text-xs text-amber-600 font-medium mb-0.5">賒帳未收</div>
-            <div class="text-base font-bold text-amber-800">$${d.credit_unpaid.toFixed(0)}</div>
-          </div>
-          <div class="text-right">
-            <div class="text-xs text-gray-500 font-medium mb-0.5">扣賒帳後實有</div>
-            <div class="text-base font-bold text-gray-800">$${d.actual_cash.toFixed(0)}</div>
-          </div>
-        </div>` : '';
+      const totalLbs = Math.round(d.total_grams_purchased / 448);
 
       document.getElementById('settlement-content').innerHTML = `
         <div class="grid grid-cols-2 gap-3 mb-4">
@@ -787,18 +777,13 @@
           ${statsCard('應有現金', '$'+d.expected_cash.toFixed(0), '總營業額 − 進貨成本', true)}
           ${statsCard('已收現金', '$'+d.actual_cash.toFixed(0), d.credit_unpaid > 0 ? '賒帳未收 $'+d.credit_unpaid.toFixed(0) : '無賒帳')}
         </div>
-        ${creditRow}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
           <div class="text-sm font-semibold text-gray-800 mb-3">進貨概覽</div>
-          <div class="flex justify-between items-center text-sm py-1.5 border-b border-gray-50">
+          <div class="flex justify-between items-center text-sm py-1.5${d.total_shipping > 0 || d.total_discount > 0 ? ' border-b border-gray-50' : ''}">
             <span class="text-gray-500">本月總進貨量</span>
-            <span class="font-medium">${d.total_grams_purchased.toFixed(0)} g　（${d.total_pounds_purchased.toFixed(3)} lb）</span>
+            <span class="font-medium">${totalLbs} 磅　（${d.total_grams_purchased.toFixed(0)} g）</span>
           </div>
-          <div class="flex justify-between items-center text-sm py-1.5 border-b border-gray-50">
-            <span class="text-gray-500">每磅均價</span>
-            <span class="font-medium">$${d.avg_cost_per_pound.toFixed(0)}</span>
-          </div>
-          ${d.total_shipping > 0 ? `<div class="flex justify-between items-center text-sm py-1.5 border-b border-gray-50"><span class="text-gray-500">運費收入</span><span class="font-medium text-green-600">+$${d.total_shipping.toFixed(0)}</span></div>` : ''}
+          ${d.total_shipping > 0 ? `<div class="flex justify-between items-center text-sm py-1.5${d.total_discount > 0 ? ' border-b border-gray-50' : ''}"><span class="text-gray-500">運費收入</span><span class="font-medium text-green-600">+$${d.total_shipping.toFixed(0)}</span></div>` : ''}
           ${d.total_discount > 0 ? `<div class="flex justify-between items-center text-sm py-1.5"><span class="text-gray-500">折扣合計</span><span class="font-medium text-red-500">-$${d.total_discount.toFixed(0)}</span></div>` : ''}
         </div>
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
