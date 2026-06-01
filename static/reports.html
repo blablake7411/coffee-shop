@@ -780,8 +780,8 @@
             <div class="${progressColor} h-1.5 rounded-full transition-all" style="width:${soldPct}%"></div>
           </div>
           <div class="flex text-xs text-gray-400 mb-3">
-            <span>已售 ${soldPct}%　${p.fmtG(total_sold_grams)}g / ${p.fmtG(total_purchased_grams)}g</span>
-            <span class="ml-auto">庫存 ${p.fmtG(stock_grams)}g</span>
+            <span>已售 ${soldPct}%　${fmtG(p.total_sold_grams)}g / ${fmtG(p.total_purchased_grams)}g</span>
+            <span class="ml-auto">庫存 ${fmtG(p.stock_grams)}g</span>
           </div>
           <!-- 進貨 -->
           <div class="text-xs font-medium text-gray-500 mb-1">進貨（成本 $${p.total_purchase_cost.toFixed(0)}）</div>
@@ -826,9 +826,9 @@
             <span class="text-sm font-bold ${p.expected_cash >= 0 ? 'text-gray-900' : 'text-red-600'}">淨利 $${p.expected_cash.toFixed(0)}</span>
           </div>
           <div class="flex items-center flex-wrap text-xs text-gray-400 gap-x-3 gap-y-0.5">
-            ${p.sold_grams > 0 ? `<span>售出 ${p.fmtG(sold_grams)}g</span>` : ''}
+            ${p.sold_grams > 0 ? `<span>售出 ${fmtG(p.sold_grams)}g</span>` : ''}
             ${grossRevenue > 0 || p.revenue > 0 ? `<span>收入 ${revenueDetail}</span>` : ''}
-            ${p.purchase_cost > 0 ? `<span>成本 $${p.purchase_cost.toFixed(0)}（進 ${p.fmtG(purchased_grams)}g）</span>` : ''}
+            ${p.purchase_cost > 0 ? `<span>成本 $${p.purchase_cost.toFixed(0)}（進 ${fmtG(p.purchased_grams)}g）</span>` : ''}
           </div>
         </div>`;
       }).join('');

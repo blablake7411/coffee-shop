@@ -165,6 +165,7 @@
 
   <script>
     const TZ = 'Australia/Sydney';
+    const fmtG = g => g % 1 === 0 ? g.toFixed(0) : g.toFixed(1);
     let editingProductId = null;
     let editingPurchaseId = null;
     let allProducts = [];
@@ -205,7 +206,7 @@
             <div class="flex-1 min-w-0">
               <div class="font-medium text-gray-900">${p.name}</div>
               <div class="flex flex-wrap gap-1 mt-1">${prices || '<span class="text-xs text-gray-400">未設定售價</span>'}</div>
-              <div class="text-xs text-gray-400 mt-1">庫存 ${p.stock_grams.toFixed(0)}g</div>
+              <div class="text-xs text-gray-400 mt-1">庫存 ${fmtG(p.stock_grams)}g</div>
             </div>
             <div class="flex gap-1.5 shrink-0 mt-0.5">
               <button onclick="openEditProduct(${p.id})" class="text-xs px-2.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg">編輯</button>
