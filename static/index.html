@@ -97,6 +97,7 @@
     }
 
     const TZ = 'Australia/Sydney';
+    const fmtG = g => g % 1 === 0 ? g.toFixed(0) : g.toFixed(1);
     document.getElementById('today-date').textContent = new Date().toLocaleDateString('zh-TW', {month:'long',day:'numeric',weekday:'short', timeZone: TZ});
 
     async function load() {
@@ -163,7 +164,7 @@
         document.getElementById('product-summary-rows').innerHTML = sorted.map(([name, v]) => `
           <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
             <span class="text-gray-700 flex-1">${name}</span>
-            <span class="text-gray-400 text-xs w-14 text-right">${v.grams.toFixed(0)}g</span>
+            <span class="text-gray-400 text-xs w-14 text-right">${fmtG(v.grams)}g</span>
             <span class="font-semibold text-gray-900 w-16 text-right">$${v.revenue.toFixed(0)}</span>
           </div>`).join('');
         const shippingRow = document.getElementById('shipping-summary-row');
@@ -189,7 +190,7 @@
       }
       list.innerHTML = html;
       document.getElementById('today-total').textContent = '$' + total.toFixed(0);
-      document.getElementById('today-grams').textContent = totalGrams > 0 ? totalGrams.toFixed(0) : '';
+      document.getElementById('today-grams').textContent = totalGrams > 0 ? fmtG(totalGrams) : '';
     }
 
     function openModal(order) {

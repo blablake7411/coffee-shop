@@ -138,6 +138,7 @@
 
   <script>
     const TZ = 'Australia/Sydney';
+    const fmtG = g => g % 1 === 0 ? g.toFixed(0) : g.toFixed(1);
     let currentTab = 'custom';
     let splitMode = 'cost';
     let lastQuarterlyData = null;
@@ -175,7 +176,7 @@
         <div class="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0 text-gray-400">
           <span class="w-10">${p.date}</span>
           <span class="flex-1 px-2">${p.product}</span>
-          <span class="w-12 text-right">${p.grams.toFixed(0)}g</span>
+          <span class="w-12 text-right">${fmtG(p.grams)}g</span>
           <span class="w-14 text-right text-gray-600">$${p.total_cost.toFixed(0)}</span>
         </div>`).join('');
       return `<div class="mt-1 ml-2 bg-gray-50 rounded-lg px-2 py-0.5">${rows}</div>`;
@@ -195,7 +196,7 @@
       const rows = breakdown.map(p => `
         <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
           <span class="text-gray-700 flex-1">${p.product}</span>
-          <span class="text-gray-400 text-xs w-10 text-right">${p.grams.toFixed(0)}g</span>
+          <span class="text-gray-400 text-xs w-10 text-right">${fmtG(p.grams)}g</span>
           <span class="font-medium text-gray-800 w-16 text-right">$${p.revenue.toFixed(0)}</span>
           ${hasShipping ? `<span class="text-gray-500 text-xs w-14 text-right">${(p.shipping || 0) > 0 ? '$'+p.shipping.toFixed(0) : '—'}</span>` : ''}
         </div>
@@ -214,7 +215,7 @@
         <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
           <span class="text-gray-500 w-10">${p.date}</span>
           <span class="text-gray-700 flex-1 px-2">${p.product}</span>
-          <span class="text-gray-400 text-xs w-14 text-right">${p.grams.toFixed(0)}g</span>
+          <span class="text-gray-400 text-xs w-14 text-right">${fmtG(p.grams)}g</span>
           <span class="font-medium text-gray-800 w-14 text-right">$${p.total_cost.toFixed(0)}</span>
         </div>
       `).join('');
@@ -260,7 +261,7 @@
             <span class="text-gray-500 w-16">週${day.day} ${day.date}</span>
             <span class="text-gray-400 text-xs w-10 text-center">${day.order_count}筆</span>
             <span class="font-medium text-gray-800">$${day.revenue.toFixed(0)}</span>
-            <span class="text-gray-400 text-xs w-12 text-right">${day.grams > 0 ? day.grams.toFixed(0) : '—'}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${day.grams > 0 ? fmtG(day.grams) : '—'}</span>
           </div>
           ${inlinePurchases(day.purchases)}
         </div>
@@ -301,7 +302,7 @@
             <span class="text-gray-500">${w.label}</span>
             <span class="text-gray-400 text-xs w-10 text-center">${w.order_count}筆</span>
             <span class="font-medium text-gray-800">$${w.revenue.toFixed(0)}</span>
-            <span class="text-gray-400 text-xs w-12 text-right">${w.grams > 0 ? w.grams.toFixed(0) : '—'}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${w.grams > 0 ? fmtG(w.grams) : '—'}</span>
           </div>
           ${inlinePurchases(w.purchases)}
         </div>
@@ -352,7 +353,7 @@
             <div class="flex items-center justify-between text-xs py-1 pl-2 border-b border-gray-50 last:border-0 text-gray-400">
               <span class="w-10">${p.date}</span>
               <span class="flex-1 px-2">${p.product}</span>
-              <span class="w-12 text-right">${p.grams.toFixed(0)}g</span>
+              <span class="w-12 text-right">${fmtG(p.grams)}g</span>
               <span class="w-14 text-right text-gray-600">$${p.total_cost.toFixed(0)}</span>
             </div>`).join('')
           : '';
@@ -362,7 +363,7 @@
             <span class="text-gray-600">${m.month}</span>
             <span class="text-gray-800 font-medium">$${m.revenue.toFixed(0)}</span>
             <span class="text-gray-400 text-xs">${useCost ? '淨利' : '分成'} $${(useCost ? m.net_profit : m.revenue * 0.7).toFixed(0)}</span>
-            <span class="text-gray-400 text-xs w-12 text-right">${m.grams > 0 ? m.grams.toFixed(0) : '—'}</span>
+            <span class="text-gray-400 text-xs w-12 text-right">${m.grams > 0 ? fmtG(m.grams) : '—'}</span>
           </div>
           ${purchaseRows ? `<div class="mt-1 ml-2 bg-gray-50 rounded-lg px-2 py-0.5">${purchaseRows}</div>` : ''}
         </div>`;
@@ -547,7 +548,7 @@
               <span class="text-gray-500 w-16">週${r.day} ${r.date}</span>
               <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
               <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
-              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? fmtG(r.grams) : '—'}</span>
             </div>
             ${inlinePurchases(r.purchases)}
           </div>`).join(''),
@@ -557,7 +558,7 @@
               <span class="text-gray-500">${r.label}</span>
               <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
               <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
-              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? fmtG(r.grams) : '—'}</span>
             </div>
             ${inlinePurchases(r.purchases)}
           </div>`).join(''),
@@ -567,7 +568,7 @@
               <span class="text-gray-500">${r.label}</span>
               <span class="text-gray-400 text-xs w-10 text-center">${r.order_count}筆</span>
               <span class="font-medium text-gray-800">$${r.revenue.toFixed(0)}</span>
-              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? r.grams.toFixed(0) : '—'}</span>
+              <span class="text-gray-400 text-xs w-12 text-right">${r.grams > 0 ? fmtG(r.grams) : '—'}</span>
             </div>
             ${inlinePurchases(r.purchases)}
           </div>`).join(''),
@@ -606,13 +607,13 @@
       let breakdownHeader = '';
       if (customBreakdown === 'daily') {
         breakdownHeader = '<tr><th>日期</th><th>星期</th><th>訂單數</th><th>營業額</th><th>克數</th></tr>';
-        breakdownRows = d.daily_breakdown.map(r => `<tr><td>${r.date}</td><td>週${r.day}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? r.grams.toFixed(0)+'g' : '—'}</td></tr>`).join('');
+        breakdownRows = d.daily_breakdown.map(r => `<tr><td>${r.date}</td><td>週${r.day}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? fmtG(r.grams)+'g' : '—'}</td></tr>`).join('');
       } else if (customBreakdown === 'weekly') {
         breakdownHeader = '<tr><th>週次</th><th>訂單數</th><th>營業額</th><th>克數</th></tr>';
-        breakdownRows = d.weekly_breakdown.map(r => `<tr><td>${r.label}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? r.grams.toFixed(0)+'g' : '—'}</td></tr>`).join('');
+        breakdownRows = d.weekly_breakdown.map(r => `<tr><td>${r.label}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? fmtG(r.grams)+'g' : '—'}</td></tr>`).join('');
       } else {
         breakdownHeader = '<tr><th>月份</th><th>訂單數</th><th>營業額</th><th>克數</th></tr>';
-        breakdownRows = d.monthly_breakdown.map(r => `<tr><td>${r.label}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? r.grams.toFixed(0)+'g' : '—'}</td></tr>`).join('');
+        breakdownRows = d.monthly_breakdown.map(r => `<tr><td>${r.label}</td><td>${r.order_count}</td><td>$${r.revenue.toFixed(0)}</td><td>${r.grams > 0 ? fmtG(r.grams)+'g' : '—'}</td></tr>`).join('');
       }
 
       const purchaseSection = d.purchases && d.purchases.length > 0 ? `
@@ -620,7 +621,7 @@
         <div class="section-title">進貨明細</div>
         <table>
           <thead><tr><th>日期</th><th>品名</th><th>克數</th><th>成本</th></tr></thead>
-          <tbody>${d.purchases.map(p => `<tr><td>${p.date}</td><td>${p.product}</td><td>${p.grams.toFixed(0)}g</td><td>$${p.total_cost.toFixed(0)}</td></tr>`).join('')}</tbody>
+          <tbody>${d.purchases.map(p => `<tr><td>${p.date}</td><td>${p.product}</td><td>${fmtG(p.grams)}g</td><td>$${p.total_cost.toFixed(0)}</td></tr>`).join('')}</tbody>
         </table>` : '';
 
       const html = `<!DOCTYPE html>
@@ -754,7 +755,7 @@
         const purchaseRows = p.purchases.map(b =>
           `<div class="flex items-center text-xs py-1 border-b border-gray-50 last:border-0 text-gray-500">
             <span class="w-10 shrink-0">${b.date}</span>
-            <span class="flex-1">${b.lbs} 磅（${b.grams.toFixed(0)}g）</span>
+            <span class="flex-1">${b.lbs} 磅（${fmtG(b.grams)}g）</span>
             <span class="font-medium">$${b.cost.toFixed(0)}</span>
           </div>`
         ).join('');
@@ -779,8 +780,8 @@
             <div class="${progressColor} h-1.5 rounded-full transition-all" style="width:${soldPct}%"></div>
           </div>
           <div class="flex text-xs text-gray-400 mb-3">
-            <span>已售 ${soldPct}%　${p.total_sold_grams.toFixed(0)}g / ${p.total_purchased_grams.toFixed(0)}g</span>
-            <span class="ml-auto">庫存 ${p.stock_grams.toFixed(0)}g</span>
+            <span>已售 ${soldPct}%　${p.fmtG(total_sold_grams)}g / ${p.fmtG(total_purchased_grams)}g</span>
+            <span class="ml-auto">庫存 ${p.fmtG(stock_grams)}g</span>
           </div>
           <!-- 進貨 -->
           <div class="text-xs font-medium text-gray-500 mb-1">進貨（成本 $${p.total_purchase_cost.toFixed(0)}）</div>
@@ -825,9 +826,9 @@
             <span class="text-sm font-bold ${p.expected_cash >= 0 ? 'text-gray-900' : 'text-red-600'}">淨利 $${p.expected_cash.toFixed(0)}</span>
           </div>
           <div class="flex items-center flex-wrap text-xs text-gray-400 gap-x-3 gap-y-0.5">
-            ${p.sold_grams > 0 ? `<span>售出 ${p.sold_grams.toFixed(0)}g</span>` : ''}
+            ${p.sold_grams > 0 ? `<span>售出 ${p.fmtG(sold_grams)}g</span>` : ''}
             ${grossRevenue > 0 || p.revenue > 0 ? `<span>收入 ${revenueDetail}</span>` : ''}
-            ${p.purchase_cost > 0 ? `<span>成本 $${p.purchase_cost.toFixed(0)}（進 ${p.purchased_grams.toFixed(0)}g）</span>` : ''}
+            ${p.purchase_cost > 0 ? `<span>成本 $${p.purchase_cost.toFixed(0)}（進 ${p.fmtG(purchased_grams)}g）</span>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -845,7 +846,7 @@
           <div class="text-sm font-semibold text-gray-800 mb-3">進貨概覽</div>
           <div class="flex justify-between items-center text-sm py-1.5${d.total_shipping > 0 || d.total_discount > 0 ? ' border-b border-gray-50' : ''}">
             <span class="text-gray-500">本月總進貨量</span>
-            <span class="font-medium">${totalLbs} 磅　（${d.total_grams_purchased.toFixed(0)} g）</span>
+            <span class="font-medium">${totalLbs} 磅　（${fmtG(d.total_grams_purchased)} g）</span>
           </div>
           ${d.total_shipping > 0 ? `<div class="flex justify-between items-center text-sm py-1.5${d.total_discount > 0 ? ' border-b border-gray-50' : ''}"><span class="text-gray-500">運費收入</span><span class="font-medium text-green-600">+$${d.total_shipping.toFixed(0)}</span></div>` : ''}
           ${d.total_discount > 0 ? `<div class="flex justify-between items-center text-sm py-1.5"><span class="text-gray-500">折扣合計</span><span class="font-medium text-red-500">-$${d.total_discount.toFixed(0)}</span></div>` : ''}
