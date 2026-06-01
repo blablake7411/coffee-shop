@@ -130,12 +130,22 @@
 
     <!-- 點交 -->
     <div id="panel-settlement" class="hidden">
-      <div class="flex items-center justify-between mb-4 gap-2">
+      <!-- 模式切換 -->
+      <div class="flex bg-gray-100 rounded-xl p-1 mb-4">
+        <button id="smode-monthly" onclick="setSettlementMode('monthly')"
+          class="flex-1 py-1.5 rounded-lg text-sm font-medium transition bg-white text-gray-900 shadow-sm">月份</button>
+        <button id="smode-product" onclick="setSettlementMode('product')"
+          class="flex-1 py-1.5 rounded-lg text-sm font-medium transition text-gray-500">品項</button>
+      </div>
+      <!-- 月份模式 -->
+      <div id="settlement-monthly-ctrl" class="flex items-center justify-between mb-4 gap-2">
         <button onclick="prevSettlementMonth()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8249;</button>
         <span id="settlement-period" class="text-sm font-medium text-gray-800"></span>
         <button onclick="nextSettlementMonth()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8250;</button>
       </div>
       <div id="settlement-content"></div>
+      <!-- 品項模式 -->
+      <div id="settlement-product-content" class="hidden"></div>
     </div>
 
   </main>
@@ -730,6 +740,87 @@
       lastCustomData = await res.json();
       if (lastCustomData.error) return;
       renderCustom(lastCustomData);
+    }
+
+    let settlementMode = 'monthly';
+
+    function setSettlementMode(mode) {
+      settlementMode = mode;
+      document.getElementById('smode-monthly').className = `flex-1 py-1.5 rounded-lg text-sm font-medium transition ${mode === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`;
+      document.getElementById('smode-product').className = `flex-1 py-1.5 rounded-lg text-sm font-medium transition ${mode === 'product' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`;
+      document.getElementById('settlement-monthly-ctrl').classList.toggle('hidden', mode !== 'monthly');
+      document.getElementById('settlement-content').classList.toggle('hidden', mode !== 'monthly');
+      document.getElementById('settlement-product-content').classList.toggle('hidden', mode !== 'product');
+      if (mode === 'product') loadProductSettlement();
+      else loadSettlement();
+    }
+
+    async function loadProductSettlement() {
+      const container = document.getElementById('settlement-product-content');
+      container.innerHTML = '<div class="text-sm text-gray-400 text-center py-6">載入中...</div>';
+      const res = await fetch('/api/reports/product-settlement');
+      const products = await res.json();
+      if (!products.length) {
+        container.innerHTML = '<div class="text-sm text-gray-400 text-center py-6">尚無資料</div>';
+        return;
+      }
+
+      const totalRevenue = products.reduce((s, p) => s + p.total_revenue, 0);
+      const totalCost = products.reduce((s, p) => s + p.total_purchase_cost, 0);
+      const totalNet = totalRevenue - totalCost;
+
+      const summaryCards = `
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          ${statsCard('總營業額', '$'+totalRevenue.toFixed(0))}
+          ${statsCard('總進貨成本', '$'+totalCost.toFixed(0))}
+          ${statsCard('累計淨利', '$'+totalNet.toFixed(0), '所有品項合計', true)}
+          ${statsCard('品項數', products.length+'款', '有進貨紀錄')}
+        </div>`;
+
+      const productCards = products.map(p => {
+        const purchaseRows = p.purchases.map(b =>
+          `<div class="flex items-center text-xs py-1 border-b border-gray-50 last:border-0 text-gray-500">
+            <span class="w-10 shrink-0">${b.date}</span>
+            <span class="flex-1">${b.lbs} 磅（${b.grams.toFixed(0)}g）</span>
+            <span class="font-medium">$${b.cost.toFixed(0)}</span>
+          </div>`
+        ).join('');
+
+        const soldPct = p.total_purchased_grams > 0
+          ? Math.min(100, Math.round(p.total_sold_grams / p.total_purchased_grams * 100))
+          : 0;
+        const progressColor = soldPct >= 100 ? 'bg-green-400' : 'bg-brand';
+
+        let revenueDetail = `$${p.total_revenue.toFixed(0)}`;
+        if (p.total_discount > 0) revenueDetail += ` <span class="text-red-400">折扣-$${p.total_discount.toFixed(0)}</span>`;
+        if (p.total_shipping > 0) revenueDetail += ` <span class="text-green-500">運費+$${p.total_shipping.toFixed(0)}</span>`;
+
+        return `
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-semibold text-gray-900">${p.product}</span>
+            <span class="text-sm font-bold ${p.net_profit >= 0 ? 'text-gray-900' : 'text-red-600'}">淨利 $${p.net_profit.toFixed(0)}</span>
+          </div>
+          <!-- 進度條 -->
+          <div class="h-1.5 bg-gray-100 rounded-full mb-3">
+            <div class="${progressColor} h-1.5 rounded-full transition-all" style="width:${soldPct}%"></div>
+          </div>
+          <div class="flex text-xs text-gray-400 mb-3">
+            <span>已售 ${soldPct}%　${p.total_sold_grams.toFixed(0)}g / ${p.total_purchased_grams.toFixed(0)}g</span>
+            <span class="ml-auto">庫存 ${p.stock_grams.toFixed(0)}g</span>
+          </div>
+          <!-- 進貨 -->
+          <div class="text-xs font-medium text-gray-500 mb-1">進貨（成本 $${p.total_purchase_cost.toFixed(0)}）</div>
+          <div class="bg-gray-50 rounded-lg px-3 py-1 mb-3">${purchaseRows || '<div class="text-xs text-gray-400 py-1">無進貨紀錄</div>'}</div>
+          <!-- 銷售 -->
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-medium text-gray-500">銷售收入</span>
+            <span class="text-gray-700">${revenueDetail}</span>
+          </div>
+        </div>`;
+      }).join('');
+
+      container.innerHTML = summaryCards + productCards;
     }
 
     function prevSettlementMonth() {

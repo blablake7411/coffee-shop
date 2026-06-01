@@ -603,6 +603,64 @@ def export_custom_to_sheets(
     return {"url": f"https://docs.google.com/spreadsheets/d/{ss_id}"}
 
 
+@router.get("/product-settlement")
+def product_settlement_all(db: Session = Depends(get_db)):
+    products = db.query(Product).filter(Product.is_active == True).all()
+    result = []
+    for product in products:
+        purchases = (
+            db.query(PurchaseRecord)
+            .filter(PurchaseRecord.product_id == product.id)
+            .order_by(PurchaseRecord.purchased_at)
+            .all()
+        )
+        sale_rows = (
+            db.query(
+                OrderItem.subtotal,
+                OrderItem.discount_amount,
+                OrderItem.shipping_fee,
+                OrderItem.gram_size,
+                OrderItem.quantity,
+            )
+            .join(OrderItem.order)
+            .filter(OrderItem.product_id == product.id, Order.status != "退款")
+            .all()
+        )
+        if not purchases and not sale_rows:
+            continue
+
+        total_purchase_cost = sum(p.total_cost for p in purchases)
+        total_purchased_grams = sum(p.quantity_grams for p in purchases)
+        total_sold_grams = sum(r.gram_size * r.quantity for r in sale_rows)
+        total_revenue = sum(r.subtotal - (r.discount_amount or 0) + (r.shipping_fee or 0) for r in sale_rows)
+        total_discount = sum(r.discount_amount or 0 for r in sale_rows)
+        total_shipping = sum(r.shipping_fee or 0 for r in sale_rows)
+
+        result.append({
+            "product_id": product.id,
+            "product": product.name,
+            "stock_grams": round(product.stock_grams, 1),
+            "purchases": [
+                {
+                    "date": p.purchased_at.strftime("%-m/%-d"),
+                    "grams": p.quantity_grams,
+                    "lbs": round(p.quantity_grams / 448),
+                    "cost": p.total_cost,
+                }
+                for p in purchases
+            ],
+            "total_purchased_grams": round(total_purchased_grams, 1),
+            "total_purchased_lbs": round(total_purchased_grams / 448),
+            "total_purchase_cost": round(total_purchase_cost, 1),
+            "total_sold_grams": round(total_sold_grams, 1),
+            "total_revenue": round(total_revenue, 1),
+            "total_discount": round(total_discount, 1),
+            "total_shipping": round(total_shipping, 1),
+            "net_profit": round(total_revenue - total_purchase_cost, 1),
+        })
+    return sorted(result, key=lambda x: -x["total_revenue"])
+
+
 @router.get("/settlement")
 def settlement_report(year: Optional[int] = None, month: Optional[int] = None, db: Session = Depends(get_db)):
     today = date.today()
