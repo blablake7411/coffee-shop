@@ -752,12 +752,12 @@
         <div class="py-3 border-b border-gray-50 last:border-0">
           <div class="flex items-center justify-between mb-1">
             <span class="font-medium text-gray-800 flex-1">${p.product}</span>
-            <span class="text-sm font-bold ${p.expected_cash >= 0 ? 'text-gray-900' : 'text-red-600'}">$${p.expected_cash.toFixed(0)}</span>
+            <span class="text-sm font-bold ${p.expected_cash >= 0 ? 'text-gray-900' : 'text-red-600'}">淨利 $${p.expected_cash.toFixed(0)}</span>
           </div>
           <div class="flex items-center flex-wrap text-xs text-gray-400 gap-x-3 gap-y-0.5">
             ${p.sold_grams > 0 ? `<span>售出 ${p.sold_grams.toFixed(0)}g</span>` : ''}
-            ${p.purchased_grams > 0 ? `<span>進貨 ${p.purchased_grams.toFixed(0)}g（成本 $${p.purchase_cost.toFixed(0)}）</span>` : ''}
-            ${p.revenue > 0 ? `<span class="ml-auto">營業額 $${p.revenue.toFixed(0)}</span>` : ''}
+            ${p.revenue > 0 ? `<span>收入 $${(p.revenue + p.discount).toFixed(0)}${p.discount > 0 ? ` <span class="text-red-400">-$${p.discount.toFixed(0)}</span> =$${p.revenue.toFixed(0)}` : ''}</span>` : ''}
+            ${p.purchase_cost > 0 ? `<span>成本 $${p.purchase_cost.toFixed(0)}（進 ${p.purchased_grams.toFixed(0)}g）</span>` : ''}
           </div>
         </div>
       `).join('');
@@ -776,10 +776,10 @@
 
       document.getElementById('settlement-content').innerHTML = `
         <div class="grid grid-cols-2 gap-3 mb-4">
-          ${statsCard('總營業額', '$'+d.total_revenue.toFixed(0))}
+          ${statsCard('品項收入', '$'+d.total_item_revenue.toFixed(0), d.total_discount > 0 ? '已扣折扣 $'+d.total_discount.toFixed(0) : '')}
           ${statsCard('總進貨成本', '$'+d.total_purchase_cost.toFixed(0))}
-          ${statsCard('應有現金', '$'+d.expected_cash.toFixed(0), '營業額 − 進貨成本', true)}
-          ${statsCard('已收現金', '$'+d.actual_cash.toFixed(0), d.credit_unpaid > 0 ? '扣除賒帳 $'+d.credit_unpaid.toFixed(0) : '無賒帳')}
+          ${statsCard('應有現金', '$'+d.expected_cash.toFixed(0), '含運費 $'+d.total_shipping.toFixed(0), true)}
+          ${statsCard('已收現金', '$'+d.actual_cash.toFixed(0), d.credit_unpaid > 0 ? '賒帳未收 $'+d.credit_unpaid.toFixed(0) : '無賒帳')}
         </div>
         ${creditRow}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
@@ -788,10 +788,11 @@
             <span class="text-gray-500">本月總進貨量</span>
             <span class="font-medium">${d.total_grams_purchased.toFixed(0)} g　（${d.total_pounds_purchased.toFixed(3)} lb）</span>
           </div>
-          <div class="flex justify-between items-center text-sm py-1.5">
+          <div class="flex justify-between items-center text-sm py-1.5 border-b border-gray-50">
             <span class="text-gray-500">每磅均價</span>
             <span class="font-medium">$${d.avg_cost_per_pound.toFixed(0)}</span>
           </div>
+          ${d.total_shipping > 0 ? `<div class="flex justify-between items-center text-sm py-1.5"><span class="text-gray-500">運費收入</span><span class="font-medium">$${d.total_shipping.toFixed(0)}</span></div>` : ''}
         </div>
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
           <div class="text-sm font-semibold text-gray-800 mb-2">品項點交明細</div>

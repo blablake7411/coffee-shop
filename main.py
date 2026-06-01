@@ -9,11 +9,15 @@ models.Base.metadata.create_all(bind=engine)
 
 from sqlalchemy import text
 with engine.connect() as _conn:
-    try:
-        _conn.execute(text("ALTER TABLE orders ADD COLUMN shipping_fee FLOAT DEFAULT 0"))
-        _conn.commit()
-    except Exception:
-        pass
+    for _sql in [
+        "ALTER TABLE orders ADD COLUMN shipping_fee FLOAT DEFAULT 0",
+        "ALTER TABLE order_items ADD COLUMN discount_amount FLOAT DEFAULT 0",
+    ]:
+        try:
+            _conn.execute(text(_sql))
+            _conn.commit()
+        except Exception:
+            pass
 
 from routers import customers, products, orders, inventory, reports
 

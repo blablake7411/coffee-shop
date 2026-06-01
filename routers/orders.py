@@ -109,6 +109,7 @@ def list_orders(
 @router.post("/", response_model=OrderOut)
 def create_order(data: OrderCreate, db: Session = Depends(get_db)):
     subtotal = 0.0
+    total_discount = 0.0
     items_data = []
     for item in data.items:
         product = db.query(Product).filter(Product.id == item.product_id).first()
@@ -116,9 +117,10 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail=f"Product {item.product_id} not found")
         item_subtotal = item.unit_price * item.quantity
         subtotal += item_subtotal
+        total_discount += item.discount_amount
         items_data.append((item, item_subtotal, product))
 
-    final_amount = subtotal - data.discount_amount + data.shipping_fee
+    final_amount = subtotal - total_discount + data.shipping_fee
     order_date = data.order_date or date.today()
 
     order = Order(
@@ -126,7 +128,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
         order_date=order_date,
         status=data.status,
         subtotal=subtotal,
-        discount_amount=data.discount_amount,
+        discount_amount=total_discount,
         shipping_fee=data.shipping_fee,
         final_amount=final_amount,
         is_credit=data.is_credit,
@@ -143,6 +145,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
             quantity=item.quantity,
             unit_price=item.unit_price,
             subtotal=item_subtotal,
+            discount_amount=item.discount_amount,
         ))
         product.stock_grams -= item.gram_size * item.quantity
 
@@ -165,12 +168,14 @@ def replace_order_items(order_id: int, data: OrderItemsReplace, db: Session = De
     db.flush()
 
     subtotal = 0.0
+    total_discount = 0.0
     for item_data in data.items:
         product = db.query(Product).filter(Product.id == item_data.product_id).first()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product {item_data.product_id} not found")
         item_subtotal = item_data.unit_price * item_data.quantity
         subtotal += item_subtotal
+        total_discount += item_data.discount_amount
         db.add(OrderItem(
             order_id=order.id,
             product_id=item_data.product_id,
@@ -178,13 +183,13 @@ def replace_order_items(order_id: int, data: OrderItemsReplace, db: Session = De
             quantity=item_data.quantity,
             unit_price=item_data.unit_price,
             subtotal=item_subtotal,
+            discount_amount=item_data.discount_amount,
         ))
         product.stock_grams -= item_data.gram_size * item_data.quantity
 
-    discount = data.discount_amount if data.discount_amount is not None else order.discount_amount
     order.subtotal = subtotal
-    order.discount_amount = discount
-    order.final_amount = subtotal - discount + (order.shipping_fee or 0)
+    order.discount_amount = total_discount
+    order.final_amount = subtotal - total_discount + (order.shipping_fee or 0)
     order.updated_at = datetime.now(timezone.utc)
     db.commit()
     return _load_order(db, order.id)

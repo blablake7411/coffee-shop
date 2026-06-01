@@ -74,10 +74,11 @@ class OrderItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    gram_size = Column(Float, nullable=False)   # 3 / 7 / 14 / 28 或自訂
+    gram_size = Column(Float, nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
-    unit_price = Column(Float, nullable=False)  # 這個規格的售價
-    subtotal = Column(Float, nullable=False)    # unit_price * quantity
+    unit_price = Column(Float, nullable=False)
+    subtotal = Column(Float, nullable=False)
+    discount_amount = Column(Float, default=0.0)
 
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
