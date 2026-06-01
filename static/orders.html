@@ -619,7 +619,6 @@
       setPayMethod(order.payment_method || '現金');
       document.getElementById('edit-date').value = order.order_date;
       document.getElementById('edit-status').value = order.status;
-      document.getElementById('edit-shipping').value = order.shipping_fee || 0;
       document.getElementById('edit-final').value = order.final_amount;
       const itemDiscSum = (order.items || []).reduce((s, i) => s + (i.discount_amount || 0), 0);
       const discBanner = document.getElementById('old-discount-banner');
