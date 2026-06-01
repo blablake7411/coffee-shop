@@ -24,37 +24,14 @@
   <!-- 分頁切換 -->
   <div class="bg-white border-b border-gray-200 px-4 pt-3 pb-0 sticky top-14 z-10">
     <div class="flex gap-0 border-b border-gray-200">
-      <button onclick="switchTab('weekly')" id="tab-weekly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-brand text-brand">週報</button>
-      <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">月報</button>
-      <button onclick="switchTab('quarterly')" id="tab-quarterly" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">季報</button>
-      <button onclick="switchTab('custom')" id="tab-custom" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">自訂</button>
+      <button onclick="switchTab('custom')" id="tab-custom" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-brand text-brand">自訂</button>
       <button onclick="switchTab('settlement')" id="tab-settlement" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500">點交</button>
     </div>
   </div>
 
   <main class="px-3 py-5 max-w-2xl mx-auto">
 
-    <!-- 週報 -->
-    <div id="panel-weekly">
-      <div class="flex items-center justify-between mb-4 gap-2">
-        <button onclick="weekOffset++;loadWeekly()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8249;</button>
-        <span id="weekly-period" class="text-sm font-medium text-gray-800"></span>
-        <button onclick="weekOffset--;loadWeekly()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8250;</button>
-      </div>
-      <div id="weekly-content"></div>
-    </div>
-
-    <!-- 月報 -->
-    <div id="panel-monthly" class="hidden">
-      <div class="flex items-center justify-between mb-4 gap-2">
-        <button onclick="prevMonth()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8249;</button>
-        <span id="monthly-period" class="text-sm font-medium text-gray-800"></span>
-        <button onclick="nextMonth()" class="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-lg">&#8250;</button>
-      </div>
-      <div id="monthly-content"></div>
-    </div>
-
-    <!-- 季報 -->
+    <!-- 季報（保留供 export 用，不顯示） -->
     <div id="panel-quarterly" class="hidden">
       <div class="flex items-center gap-3 mb-3">
         <div class="flex-1">
@@ -93,7 +70,7 @@
       </div>
     </div>
     <!-- 自訂 -->
-    <div id="panel-custom" class="hidden">
+    <div id="panel-custom">
       <div class="flex items-center gap-3 mb-3">
         <div class="flex-1">
           <div class="text-xs text-gray-500 mb-1">從</div>
@@ -161,8 +138,7 @@
 
   <script>
     const TZ = 'Australia/Sydney';
-    let currentTab = 'weekly';
-    let weekOffset = 0;
+    let currentTab = 'custom';
     let splitMode = 'cost';
     let lastQuarterlyData = null;
     let customBreakdown = 'daily';
@@ -181,7 +157,7 @@
 
     function switchTab(tab) {
       currentTab = tab;
-      ['weekly','monthly','quarterly','custom','settlement'].forEach(t => {
+      ['custom','settlement'].forEach(t => {
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
         const btn = document.getElementById(`tab-${t}`);
         btn.classList.toggle('border-brand', t === tab);
@@ -189,10 +165,7 @@
         btn.classList.toggle('border-transparent', t !== tab);
         btn.classList.toggle('text-gray-500', t !== tab);
       });
-      if (tab==='weekly') loadWeekly();
-      else if (tab==='monthly') loadMonthly();
-      else if (tab==='quarterly') { initQuarterly(); loadQuarterly(); }
-      else if (tab==='settlement') loadSettlement();
+      if (tab==='settlement') loadSettlement();
       else { initCustom(); loadCustom(); }
     }
 
@@ -885,7 +858,7 @@
       `;
     }
 
-    loadWeekly();
+    initCustom(); loadCustom();
   </script>
 </body>
 </html>
