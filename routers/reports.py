@@ -210,6 +210,7 @@ def _settlement_breakdown(db: Session, start: date, end: date) -> list:
             Product.name,
             OrderItem.subtotal.label("item_subtotal"),
             OrderItem.discount_amount.label("item_discount"),
+            OrderItem.shipping_fee.label("item_shipping"),
             OrderItem.gram_size,
             OrderItem.quantity,
         )
@@ -226,10 +227,12 @@ def _settlement_breakdown(db: Session, start: date, end: date) -> list:
     for r in rows:
         pid = r.id
         if pid not in data:
-            data[pid] = {"product": r.name, "revenue": 0.0, "discount": 0.0, "purchase_cost": 0.0, "sold_grams": 0.0, "purchased_grams": 0.0}
+            data[pid] = {"product": r.name, "revenue": 0.0, "discount": 0.0, "shipping": 0.0, "purchase_cost": 0.0, "sold_grams": 0.0, "purchased_grams": 0.0}
         item_discount = r.item_discount or 0.0
-        data[pid]["revenue"] += r.item_subtotal - item_discount
+        item_shipping = r.item_shipping or 0.0
+        data[pid]["revenue"] += r.item_subtotal - item_discount + item_shipping
         data[pid]["discount"] += item_discount
+        data[pid]["shipping"] += item_shipping
         data[pid]["sold_grams"] += r.gram_size * r.quantity
 
     dt_start = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
@@ -257,6 +260,7 @@ def _settlement_breakdown(db: Session, start: date, end: date) -> list:
         v["expected_cash"] = round(v["revenue"] - v["purchase_cost"], 1)
         v["revenue"] = round(v["revenue"], 1)
         v["discount"] = round(v["discount"], 1)
+        v["shipping"] = round(v["shipping"], 1)
         v["purchase_cost"] = round(v["purchase_cost"], 1)
         v["sold_grams"] = round(v["sold_grams"], 1)
         v["purchased_grams"] = round(v["purchased_grams"], 1)
@@ -606,8 +610,8 @@ def settlement_report(year: Optional[int] = None, month: Optional[int] = None, d
     product_settlement = _settlement_breakdown(db, start, end)
     total_item_revenue = sum(p["revenue"] for p in product_settlement)
     total_discount = sum(p["discount"] for p in product_settlement)
-    total_shipping = _shipping_in_range(db, start, end)
-    total_revenue = round(total_item_revenue + total_shipping, 1)
+    total_shipping = sum(p["shipping"] for p in product_settlement)
+    total_revenue = round(total_item_revenue, 1)
     total_cost = sum(p["purchase_cost"] for p in product_settlement)
     expected_cash = round(total_revenue - total_cost, 1)
     credit_unpaid = _credit_unpaid_in_range(db, start, end)

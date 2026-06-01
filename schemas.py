@@ -78,6 +78,7 @@ class OrderItemCreate(BaseModel):
     quantity: int = 1
     unit_price: float
     discount_amount: float = 0
+    shipping_fee: float = 0
 
 
 class OrderItemOut(BaseModel):
@@ -88,6 +89,7 @@ class OrderItemOut(BaseModel):
     unit_price: float
     subtotal: float
     discount_amount: float = 0
+    shipping_fee: float = 0
     product: Optional[ProductOut] = None
 
     class Config:

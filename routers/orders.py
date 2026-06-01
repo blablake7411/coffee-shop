@@ -110,6 +110,7 @@ def list_orders(
 def create_order(data: OrderCreate, db: Session = Depends(get_db)):
     subtotal = 0.0
     total_discount = 0.0
+    total_shipping = 0.0
     items_data = []
     for item in data.items:
         product = db.query(Product).filter(Product.id == item.product_id).first()
@@ -118,9 +119,10 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
         item_subtotal = item.unit_price * item.quantity
         subtotal += item_subtotal
         total_discount += item.discount_amount
+        total_shipping += item.shipping_fee
         items_data.append((item, item_subtotal, product))
 
-    final_amount = subtotal - total_discount + data.shipping_fee
+    final_amount = subtotal - total_discount + total_shipping
     order_date = data.order_date or date.today()
 
     order = Order(
@@ -129,7 +131,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
         status=data.status,
         subtotal=subtotal,
         discount_amount=total_discount,
-        shipping_fee=data.shipping_fee,
+        shipping_fee=total_shipping,
         final_amount=final_amount,
         is_credit=data.is_credit,
         notes=data.notes,
@@ -146,6 +148,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
             unit_price=item.unit_price,
             subtotal=item_subtotal,
             discount_amount=item.discount_amount,
+            shipping_fee=item.shipping_fee,
         ))
         product.stock_grams -= item.gram_size * item.quantity
 
@@ -169,6 +172,7 @@ def replace_order_items(order_id: int, data: OrderItemsReplace, db: Session = De
 
     subtotal = 0.0
     total_discount = 0.0
+    total_shipping = 0.0
     for item_data in data.items:
         product = db.query(Product).filter(Product.id == item_data.product_id).first()
         if not product:
@@ -176,6 +180,7 @@ def replace_order_items(order_id: int, data: OrderItemsReplace, db: Session = De
         item_subtotal = item_data.unit_price * item_data.quantity
         subtotal += item_subtotal
         total_discount += item_data.discount_amount
+        total_shipping += item_data.shipping_fee
         db.add(OrderItem(
             order_id=order.id,
             product_id=item_data.product_id,
@@ -184,12 +189,14 @@ def replace_order_items(order_id: int, data: OrderItemsReplace, db: Session = De
             unit_price=item_data.unit_price,
             subtotal=item_subtotal,
             discount_amount=item_data.discount_amount,
+            shipping_fee=item_data.shipping_fee,
         ))
         product.stock_grams -= item_data.gram_size * item_data.quantity
 
     order.subtotal = subtotal
     order.discount_amount = total_discount
-    order.final_amount = subtotal - total_discount + (order.shipping_fee or 0)
+    order.shipping_fee = total_shipping
+    order.final_amount = subtotal - total_discount + total_shipping
     order.updated_at = datetime.now(timezone.utc)
     db.commit()
     return _load_order(db, order.id)

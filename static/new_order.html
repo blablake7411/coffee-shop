@@ -56,10 +56,6 @@
     <section class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
       <h2 class="font-semibold text-gray-900">其他設定</h2>
       <div>
-        <label class="text-sm text-gray-500">運費</label>
-        <input type="number" id="shipping-fee" value="0" min="0" class="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm" oninput="updateTotal()">
-      </div>
-      <div>
         <label class="text-sm text-gray-500">付款方式</label>
         <div class="flex gap-2 mt-1">
           <button id="pay-cash" type="button" onclick="setPayMethod('現金')"
@@ -207,7 +203,9 @@
           <label class="text-xs text-gray-500 shrink-0">數量</label>
           <input type="number" id="qty-${id}" value="1" min="1" class="w-20 border border-gray-100 rounded-lg px-2 py-1.5 text-sm text-center" oninput="updateTotal()">
           <label class="text-xs text-gray-500 shrink-0 ml-2">折扣</label>
-          <input type="number" id="disc-${id}" value="0" min="0" placeholder="0" class="w-20 border border-gray-100 rounded-lg px-2 py-1.5 text-sm text-center" oninput="updateTotal()">
+          <input type="number" id="disc-${id}" value="0" min="0" placeholder="0" class="w-16 border border-gray-100 rounded-lg px-2 py-1.5 text-sm text-center" oninput="updateTotal()">
+          <label class="text-xs text-gray-500 shrink-0 ml-1">運費</label>
+          <input type="number" id="ship-${id}" value="0" min="0" placeholder="0" class="w-16 border border-gray-100 rounded-lg px-2 py-1.5 text-sm text-center" oninput="updateTotal()">
           <span id="item-sub-${id}" class="text-sm text-brand font-medium ml-auto"></span>
         </div>
         <input type="hidden" id="gram-${id}" value="0">
@@ -247,6 +245,7 @@
     function updateTotal() {
       let subtotal = 0;
       let totalDiscount = 0;
+      let totalShipping = 0;
       document.querySelectorAll('[id^="item-"]').forEach(itemDiv => {
         const id = itemDiv.id.replace('item-', '');
         const customVisible = !document.getElementById(`custom-inputs-${id}`)?.classList.contains('hidden');
@@ -255,13 +254,19 @@
           : parseFloat(document.getElementById(`price-${id}`)?.value || 0);
         const qty = parseInt(document.getElementById(`qty-${id}`)?.value || 1);
         const disc = parseFloat(document.getElementById(`disc-${id}`)?.value || 0);
+        const ship = parseFloat(document.getElementById(`ship-${id}`)?.value || 0);
         const sub = price * qty;
         subtotal += sub;
         totalDiscount += disc;
+        totalShipping += ship;
         const subEl = document.getElementById(`item-sub-${id}`);
-        if (subEl) subEl.textContent = sub > 0 ? (disc > 0 ? `$${sub.toFixed(0)} -$${disc.toFixed(0)}` : `小計 $${sub.toFixed(0)}`) : '';
+        if (subEl) {
+          let label = sub > 0 ? `$${sub.toFixed(0)}` : '';
+          if (disc > 0) label += ` -$${disc.toFixed(0)}`;
+          if (ship > 0) label += ` +運$${ship.toFixed(0)}`;
+          subEl.textContent = label ? `小計 ${label}` : '';
+        }
       });
-      const shipping = parseFloat(document.getElementById('shipping-fee').value) || 0;
       document.getElementById('display-subtotal').textContent = `$${subtotal.toFixed(0)}`;
       const discRow = document.getElementById('display-discount-row');
       if (totalDiscount > 0) {
@@ -271,13 +276,13 @@
         discRow.classList.add('hidden');
       }
       const shippingRow = document.getElementById('display-shipping-row');
-      if (shipping > 0) {
+      if (totalShipping > 0) {
         shippingRow.classList.remove('hidden');
-        document.getElementById('display-shipping').textContent = `+$${shipping.toFixed(0)}`;
+        document.getElementById('display-shipping').textContent = `+$${totalShipping.toFixed(0)}`;
       } else {
         shippingRow.classList.add('hidden');
       }
-      document.getElementById('display-total').textContent = `$${Math.max(0, subtotal - totalDiscount + shipping).toFixed(0)}`;
+      document.getElementById('display-total').textContent = `$${Math.max(0, subtotal - totalDiscount + totalShipping).toFixed(0)}`;
     }
 
     async function submitOrder() {
@@ -315,8 +320,9 @@
           : parseFloat(document.getElementById(`price-${id}`)?.value || 0);
         const qty = parseInt(document.getElementById(`qty-${id}`)?.value || 1);
         const disc = parseFloat(document.getElementById(`disc-${id}`)?.value || 0);
+        const ship = parseFloat(document.getElementById(`ship-${id}`)?.value || 0);
         if (!gramSize || !price) { hasError = true; return; }
-        items.push({ product_id: productId, gram_size: gramSize, quantity: qty, unit_price: price, discount_amount: disc });
+        items.push({ product_id: productId, gram_size: gramSize, quantity: qty, unit_price: price, discount_amount: disc, shipping_fee: ship });
       });
 
       if (hasError) { alert('請為所有品項選擇規格和售價'); return; }
@@ -327,7 +333,6 @@
         body: JSON.stringify({
           customer_id: customerId,
           order_date: document.getElementById('order-date').value || null,
-          shipping_fee: parseFloat(document.getElementById('shipping-fee').value) || 0,
           payment_method: document.getElementById('pay-transfer').classList.contains('bg-indigo-600') ? '匯款' : '現金',
           is_credit: document.getElementById('is-credit').checked,
           notes: document.getElementById('notes').value.trim() || null,

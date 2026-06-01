@@ -79,6 +79,7 @@ class OrderItem(Base):
     unit_price = Column(Float, nullable=False)
     subtotal = Column(Float, nullable=False)
     discount_amount = Column(Float, default=0.0)
+    shipping_fee = Column(Float, default=0.0)
 
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
