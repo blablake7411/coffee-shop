@@ -37,6 +37,10 @@
       </button>
       <div id="product-summary-body" class="hidden bg-white rounded-2xl border border-gray-100 shadow-sm px-4 pb-3 -mt-2 pt-4 rounded-t-none border-t-0">
         <div id="product-summary-rows"></div>
+        <div id="discount-summary-row" class="hidden flex items-center justify-between text-sm py-2 border-t border-gray-100 mt-1">
+          <span class="text-red-400">折扣</span>
+          <span class="font-medium text-red-400" id="discount-summary-amt"></span>
+        </div>
         <div id="shipping-summary-row" class="hidden flex items-center justify-between text-sm py-2 border-t border-gray-100 mt-1">
           <span class="text-gray-500">運費</span>
           <span class="font-medium text-gray-700" id="shipping-summary-amt"></span>
@@ -125,7 +129,8 @@
           </div>
           <div class="text-right shrink-0">
             <div class="text-lg font-bold text-gray-900">$${o.final_amount.toFixed(0)}</div>
-            ${(o.shipping_fee || 0) > 0 ? `<div class="text-xs text-gray-400">+運費 $${o.shipping_fee.toFixed(0)}</div>` : ''}
+            ${(o.discount_amount || 0) > 0 ? `<div class="text-xs text-red-400">折扣 -$${o.discount_amount.toFixed(0)}</div>` : ''}
+            ${(o.shipping_fee || 0) > 0 ? `<div class="text-xs text-gray-400">含運費 $${o.shipping_fee.toFixed(0)}</div>` : ''}
             <div class="text-xs text-gray-400">${new Date(o.created_at + 'Z').toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit', timeZone: TZ})}</div>
           </div>
         </div>
@@ -141,12 +146,13 @@
       const active = orders.filter(o => ['待確認','處理中','已出貨'].includes(o.status));
       const done = orders.filter(o => ['完成','退款'].includes(o.status));
 
-      let total = 0, totalGrams = 0, totalShipping = 0;
+      let total = 0, totalGrams = 0, totalShipping = 0, totalDiscount = 0;
       const productMap = {};
       orders.forEach(o => {
         if (o.status !== '退款') {
           total += o.final_amount;
           totalShipping += (o.shipping_fee || 0);
+          totalDiscount += (o.discount_amount || 0);
           o.items.forEach(i => {
             totalGrams += i.gram_size * i.quantity;
             const name = i.product?.name || '?';
@@ -167,6 +173,14 @@
             <span class="text-gray-400 text-xs w-14 text-right">${fmtG(v.grams)}g</span>
             <span class="font-semibold text-gray-900 w-16 text-right">$${v.revenue.toFixed(0)}</span>
           </div>`).join('');
+        const discountRow = document.getElementById('discount-summary-row');
+        if (totalDiscount > 0) {
+          discountRow.classList.remove('hidden');
+          discountRow.classList.add('flex');
+          document.getElementById('discount-summary-amt').textContent = '-$' + totalDiscount.toFixed(0);
+        } else {
+          discountRow.classList.add('hidden');
+        }
         const shippingRow = document.getElementById('shipping-summary-row');
         if (totalShipping > 0) {
           shippingRow.classList.remove('hidden');
