@@ -296,6 +296,8 @@
             gram_size: i.gram_size,
             quantity: i.quantity,
             unit_price: i.unit_price,
+            discount_amount: i.discount_amount || 0,
+            shipping_fee: i.shipping_fee || 0,
           }))
         }),
       });
